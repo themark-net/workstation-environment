@@ -1,0 +1,76 @@
+# Ansible playbook for workstation environment setup
+---
+- name: Setup Uniform Linux Workstation
+  hosts: all
+  become: true
+  vars:
+    dev_packages_redhat:
+      - git
+      - curl
+      - wget
+      - htop
+      - tree
+      - jq
+      - vim
+      - screen
+    dev_packages_debian:
+      - git
+      - curl
+      - wget
+      - htop
+      - tree
+      - jq
+      - vim
+      - screen
+      - build-essential
+  tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Install development and sysadmin packages (RedHat)
+      ansible.builtin.package:
+        name: "{{ dev_packages_redhat }}"
+        state: present
+      when: ansible_os_family == 'RedHat'
+
+    - name: Install development and sysadmin packages (Debian)
+      ansible.builtin.package:
+        name: "{{ dev_packages_debian }}"
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Install Podman (RedHat)
+      ansible.builtin.package:
+        name: podman
+        state: present
+      when: ansible_os_family == 'RedHat'
+
+    - name: Install Podman (Debian)
+      ansible.builtin.apt:
+        name: podman
+        state: present
+        update_cache: yes
+      when: ansible_os_family == 'Debian'
+
+    - name: Set unlimited bash history
+      ansible.builtin.blockinfile:
+        path: /etc/profile.d/unlimited_bash_history.sh
+        create: yes
+        block: |
+          # Unlimited bash history
+          HISTSIZE=1000000
+          HISTFILESIZE=1000000
+          HISTCONTROL=ignoredups:erasedups
+          shopt -s histappend
+          PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+      when: ansible_os_family in ['RedHat', 'Debian']
+
+    - name: Ensure vim is preferred (Debian)
+      ansible.builtin.command: update-alternatives --set editor /usr/bin/vim.basic
+      when: ansible_os_family == 'Debian' and ansible_distribution != 'Ubuntu'  # adjust as needed
+      ignore_errors: yes
+
+  handlers:
+    - name: reload profile
+      ansible.builtin.command: /bin/true
+      listen: reload_profile
