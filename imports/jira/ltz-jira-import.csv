@@ -1,0 +1,354 @@
+Issue Type,Summary,Description,Epic Name,Epic Link,Parent,Priority,Labels,Story Points,External ID
+Epic,"[LTZ-E0] Phase 0 — Foundations (AWX, repos, goldimage)","Deploy new AWX, GitLab repos, integrate goldimage SSH/YubiKey baselines, agile imports.
+
+Epic Key: LTZ-E0
+Phase: 0
+GitLab label: epic::LTZ-E0
+Estimate story points (rollup target): 40
+See docs/implementation/COST_ESTIMATES.md",LTZ-E0,,,High,"ltz,phase-0",40,LTZ-E0
+Epic,[LTZ-E1] Phase 1 — Device trust & TPM Entra CBA,"Intune Linux, trust agent, TPM-CBA no-USB, Conditional Access pilot.
+
+Epic Key: LTZ-E1
+Phase: 1
+GitLab label: epic::LTZ-E1
+Estimate story points (rollup target): 105
+See docs/implementation/COST_ESTIMATES.md",LTZ-E1,,,High,"ltz,phase-1",105,LTZ-E1
+Epic,[LTZ-E1B] Phase 1b — Workload MS CA certificates,"Workload intermediate, agent certs, reduce static secrets / service account privilege.
+
+Epic Key: LTZ-E1B
+Phase: 1b
+GitLab label: epic::LTZ-E1B
+Estimate story points (rollup target): 40
+See docs/implementation/COST_ESTIMATES.md",LTZ-E1B,,,Medium,"ltz,phase-1b",40,LTZ-E1B
+Epic,[LTZ-E2] Phase 2 — SPIRE workload identity fabric,"SPIRE HA, UpstreamAuthority, server/k8s agents, pilot mTLS.
+
+Epic Key: LTZ-E2
+Phase: 2
+GitLab label: epic::LTZ-E2
+Estimate story points (rollup target): 60
+See docs/implementation/COST_ESTIMATES.md",LTZ-E2,,,Medium,"ltz,phase-2",60,LTZ-E2
+Epic,[LTZ-E3] Phase 3 — Federation & GA,"Entra workload federation, expand CA, GA evidence.
+
+Epic Key: LTZ-E3
+Phase: 3
+GitLab label: epic::LTZ-E3
+Estimate story points (rollup target): 35
+See docs/implementation/COST_ESTIMATES.md",LTZ-E3,,,Medium,"ltz,phase-3",35,LTZ-E3
+Epic,"[LTZ-EX] Cross-cutting — Entra REQs, governance, PM","REQ-E catalog execution support, architecture, agile hygiene.
+
+Epic Key: LTZ-EX
+Phase: X
+GitLab label: epic::LTZ-EX
+Estimate story points (rollup target): 45
+See docs/implementation/COST_ESTIMATES.md",LTZ-EX,,,Medium,"ltz,phase-X",45,LTZ-EX
+Story,[LTZ-S001] Deploy AWX open-source instance,"Deploy new AWX (OSS) with backup, RBAC, network access to managed hosts and CA endpoints. Isolated from unrelated automation if required.
+
+Estimate: 40h (P0-01)
+Repo: zt-awx-config, infra as code as applicable
+DoD: AWX healthy; admin access documented; restore tested once.
+
+Story: LTZ-S001
+Epic: LTZ-E0
+GitLab issue: see imports/gitlab (title contains LTZ-S001)
+Phase: 0",LTZ-E0,LTZ-E0,,High,"ltz,phase-0,awx,platform",10,LTZ-S001
+Story,[LTZ-S002] Create GitLab repos and CI lint,"Create zt-awx-config and zt-spire-config; ansible-lint/yaml CI; protect main; MR required.
+
+Estimate: 16h (P0-02)
+Links: workstation-environment docs
+
+Story: LTZ-S002
+Epic: LTZ-E0
+GitLab issue: see imports/gitlab (title contains LTZ-S002)
+Phase: 0",LTZ-E0,LTZ-E0,,High,"ltz,phase-0,gitlab,ci",4,LTZ-S002
+Story,[LTZ-S003] Integrate goldimage baseline job,"Add AWX project for goldimage (SSH + YubiKey admin baselines). Job template runs/asserts before ZT packs.
+
+Estimate: 16h (P0-03)
+Repo: goldimage
+
+Story: LTZ-S003
+Epic: LTZ-E0
+GitLab issue: see imports/gitlab (title contains LTZ-S003)
+Phase: 0",LTZ-E0,LTZ-E0,,High,"ltz,phase-0,goldimage,ssh,yubikey",4,LTZ-S003
+Story,[LTZ-S004] Inventories and credential design,"Define linux_pilot, linux_workstations, linux_servers, spire_infra. Credential patterns without secrets in git.
+
+Estimate: 16h (P0-04)
+
+Story: LTZ-S004
+Epic: LTZ-E0
+GitLab issue: see imports/gitlab (title contains LTZ-S004)
+Phase: 0",LTZ-E0,LTZ-E0,,High,"ltz,phase-0,awx,inventory",4,LTZ-S004
+Story,[LTZ-S005] Import Jira/GitLab agile structure,"Import epics/stories into Jira; import GitLab issues; verify cross-links.
+
+Estimate: 24h (P0-05)
+Files: imports/jira, imports/gitlab
+
+Story: LTZ-S005
+Epic: LTZ-E0
+GitLab issue: see imports/gitlab (title contains LTZ-S005)
+Phase: 0",LTZ-E0,LTZ-E0,,High,"ltz,phase-0,jira,gitlab,pm",6,LTZ-S005
+Story,[LTZ-S006] RACI and architecture workshop,"Workshop: planes (user/device/workload), goldimage vs ZT packs, Entra REQ process.
+
+Estimate: 16h (P0-06)
+
+Story: LTZ-S006
+Epic: LTZ-E0
+GitLab issue: see imports/gitlab (title contains LTZ-S006)
+Phase: 0",LTZ-E0,LTZ-E0,,High,"ltz,phase-0,architecture",4,LTZ-S006
+Story,[LTZ-S010] Ansible roles: Intune prep and Edge/Broker,"Roles ms_broker_edge, intune_prep for supported distros. Idempotent via AWX.
+
+Estimate: 40h (P1-01)
+Depends: S001
+Note: SSSD OIDC already done — do not regress sssd-hybrid.
+
+Story: LTZ-S010
+Epic: LTZ-E1
+GitLab issue: see imports/gitlab (title contains LTZ-S010)
+Phase: 1",LTZ-E1,LTZ-E1,,High,"ltz,phase-1,ansible,intune,broker",10,LTZ-S010
+Story,[LTZ-S011] Trust agent and status.json,"systemd timer writes /var/lib/org-trust/status.json (TPM, LUKS, policy_gen, services).
+
+Estimate: 40h (P1-02)
+Runbook: intune-compliance-bridge.md
+
+Story: LTZ-S011
+Epic: LTZ-E1
+GitLab issue: see imports/gitlab (title contains LTZ-S011)
+Phase: 1",LTZ-E1,LTZ-E1,,High,"ltz,phase-1,trust-agent,compliance",10,LTZ-S011
+Story,[LTZ-S012] Intune Linux compliance policies,"Built-in + custom compliance. File REQ-E10–E12.
+
+Estimate: 32h (P1-03)
+Entra/Intune access: limited — formal requests required.
+
+Story: LTZ-S012
+Epic: LTZ-E1
+GitLab issue: see imports/gitlab (title contains LTZ-S012)
+Phase: 1",LTZ-E1,LTZ-E1,,High,"ltz,phase-1,intune,entra-req",8,LTZ-S012
+Story,[LTZ-S013] TPM PKCS#11 Entra CBA enrollment path,"No-USB requirement: keygen in TPM, CSR, user CA cert, NSS/broker. Pilot scripts/role auth_tpm_cba.
+
+Estimate: 56h (P1-04)
+Runbook: tpm-cba-no-usb.md
+
+Story: LTZ-S013
+Epic: LTZ-E1
+GitLab issue: see imports/gitlab (title contains LTZ-S013)
+Phase: 1",LTZ-E1,LTZ-E1,,High,"ltz,phase-1,tpm,cba,passwordless",14,LTZ-S013
+Story,[LTZ-S014] User CA template and CSR issuance,"Coordinate enterprise user/CBA template; lab + prod path.
+
+Estimate: 40h (P1-05)
+Separate from workload intermediate.
+
+Story: LTZ-S014
+Epic: LTZ-E1
+GitLab issue: see imports/gitlab (title contains LTZ-S014)
+Phase: 1",LTZ-E1,LTZ-E1,,High,"ltz,phase-1,pki,cba",10,LTZ-S014
+Story,[LTZ-S015] Entra CBA method and bindings (REQ-E02–E07),"Support IAM to enable CBA, auth binding, username binding, auth strengths. Draft tickets from ENTRA_REQUESTS.md.
+
+Estimate: 40h (P1-06)
+
+Story: LTZ-S015
+Epic: LTZ-E1
+GitLab issue: see imports/gitlab (title contains LTZ-S015)
+Phase: 1",LTZ-E1,LTZ-E1,,High,"ltz,phase-1,entra,cba,iam",10,LTZ-S015
+Story,[LTZ-S016] Conditional Access pilot (REQ-E08–E09),"Report-only then On for pilot group: compliant device + phishing-resistant MFA; include Linux.
+
+Estimate: 24h (P1-07)
+
+Story: LTZ-S016
+Epic: LTZ-E1
+GitLab issue: see imports/gitlab (title contains LTZ-S016)
+Phase: 1",LTZ-E1,LTZ-E1,,High,"ltz,phase-1,conditional-access",6,LTZ-S016
+Story,[LTZ-S017] AWX enforce schedule and policy_gen,"1–4h enforce; stamp policy_gen; alert on failure; stale = noncompliant.
+
+Estimate: 32h (P1-08)
+
+Story: LTZ-S017
+Epic: LTZ-E1
+GitLab issue: see imports/gitlab (title contains LTZ-S017)
+Phase: 1",LTZ-E1,LTZ-E1,,High,"ltz,phase-1,awx,gpo-parity",8,LTZ-S017
+Story,[LTZ-S018] Pilot cohort execution (10–20 users),"Execute pilot, fix issues, collect Entra sign-in + Intune evidence.
+
+Estimate: 48h (P1-09)
+
+Story: LTZ-S018
+Epic: LTZ-E1
+GitLab issue: see imports/gitlab (title contains LTZ-S018)
+Phase: 1",LTZ-E1,LTZ-E1,,High,"ltz,phase-1,pilot",12,LTZ-S018
+Story,"[LTZ-S019] Security validation (revoke, break-glass)","CRL revoke test, break-glass, lockout scenarios.
+
+Estimate: 32h (P1-10)
+
+Story: LTZ-S019
+Epic: LTZ-E1
+GitLab issue: see imports/gitlab (title contains LTZ-S019)
+Phase: 1",LTZ-E1,LTZ-E1,,High,"ltz,phase-1,security",8,LTZ-S019
+Story,[LTZ-S020] Create MS CA workload intermediate,"Dedicated intermediate + template for non-user certs. CRL/AIA HTTP.
+
+Estimate: 32h (P1b-01)
+Runbook: workload-certs-ms-ca.md
+
+Story: LTZ-S020
+Epic: LTZ-E1B
+GitLab issue: see imports/gitlab (title contains LTZ-S020)
+Phase: 1b",LTZ-E1B,LTZ-E1B,,Medium,"ltz,phase-1b,pki,workload",8,LTZ-S020
+Story,[LTZ-S021] AWX workload cert enroll/renew role,"SCEP/EST/API enrollment; install paths; renewal timer.
+
+Estimate: 40h (P1b-02)
+
+Story: LTZ-S021
+Epic: LTZ-E1B
+GitLab issue: see imports/gitlab (title contains LTZ-S021)
+Phase: 1b",LTZ-E1B,LTZ-E1B,,Medium,"ltz,phase-1b,ansible,workload",10,LTZ-S021
+Story,[LTZ-S022] Systemd hardening and retire static secrets (2 agents),"DynamicUser/User=; LoadCredential; remove API tokens for 2 pilot agents.
+
+Estimate: 40h (P1b-03)
+
+Story: LTZ-S022
+Epic: LTZ-E1B
+GitLab issue: see imports/gitlab (title contains LTZ-S022)
+Phase: 1b",LTZ-E1B,LTZ-E1B,,Medium,"ltz,phase-1b,systemd,secrets",10,LTZ-S022
+Story,[LTZ-S023] Workload cert compliance signals,"status.json fields + Intune rules for cert presence/expiry.
+
+Estimate: 16h (P1b-04)
+
+Story: LTZ-S023
+Epic: LTZ-E1B
+GitLab issue: see imports/gitlab (title contains LTZ-S023)
+Phase: 1b",LTZ-E1B,LTZ-E1B,,Medium,"ltz,phase-1b,compliance",4,LTZ-S023
+Story,[LTZ-S030] Deploy SPIRE Server HA,"SPIRE servers + Postgres; trust domain; deploy via AWX from zt-spire-config.
+
+Estimate: 56h (P2-01)
+Runbook: spiffe-spire.md
+
+Story: LTZ-S030
+Epic: LTZ-E2
+GitLab issue: see imports/gitlab (title contains LTZ-S030)
+Phase: 2",LTZ-E2,LTZ-E2,,Medium,"ltz,phase-2,spire,platform",14,LTZ-S030
+Story,[LTZ-S031] SPIRE UpstreamAuthority to MS CA,"Chain SPIRE under workload intermediate / enterprise PKI.
+
+Estimate: 32h (P2-02)
+
+Story: LTZ-S031
+Epic: LTZ-E2
+GitLab issue: see imports/gitlab (title contains LTZ-S031)
+Phase: 2",LTZ-E2,LTZ-E2,,Medium,"ltz,phase-2,spire,pki",8,LTZ-S031
+Story,[LTZ-S032] SPIRE agents and registration policies,"Agents on servers/k8s; systemd/k8s attestors; registration entries.
+
+Estimate: 48h (P2-03)
+
+Story: LTZ-S032
+Epic: LTZ-E2
+GitLab issue: see imports/gitlab (title contains LTZ-S032)
+Phase: 2",LTZ-E2,LTZ-E2,,Medium,"ltz,phase-2,spire,agents",12,LTZ-S032
+Story,[LTZ-S033] Pilot mTLS between two services,"Two services use X.509-SVIDs for mTLS; document ops.
+
+Estimate: 40h (P2-04)
+
+Story: LTZ-S033
+Epic: LTZ-E2
+GitLab issue: see imports/gitlab (title contains LTZ-S033)
+Phase: 2",LTZ-E2,LTZ-E2,,Medium,"ltz,phase-2,mtls,spire",10,LTZ-S033
+Story,[LTZ-S034] SPIRE ops runbooks and DR,"Backup, restore, break-glass, rotation.
+
+Estimate: 24h (P2-05)
+
+Story: LTZ-S034
+Epic: LTZ-E2
+GitLab issue: see imports/gitlab (title contains LTZ-S034)
+Phase: 2",LTZ-E2,LTZ-E2,,Medium,"ltz,phase-2,spire,ops",6,LTZ-S034
+Story,[LTZ-S040] Entra workload identity federation (REQ-E15),"Federated credential for SPIRE OIDC issuer; app registration.
+
+Estimate: 24h (P3-01)
+
+Story: LTZ-S040
+Epic: LTZ-E3
+GitLab issue: see imports/gitlab (title contains LTZ-S040)
+Phase: 3",LTZ-E3,LTZ-E3,,Medium,"ltz,phase-3,entra,federation",6,LTZ-S040
+Story,[LTZ-S041] SPIRE OIDC discovery provider,"Deploy OIDC discovery for JWT-SVID consumers.
+
+Estimate: 24h (P3-02)
+
+Story: LTZ-S041
+Epic: LTZ-E3
+GitLab issue: see imports/gitlab (title contains LTZ-S041)
+Phase: 3",LTZ-E3,LTZ-E3,,Medium,"ltz,phase-3,spire,oidc",6,LTZ-S041
+Story,[LTZ-S042] GA Conditional Access and Intune expansion,"Expand beyond pilot; monitor; support playbooks.
+
+Estimate: 32h (P3-03)
+
+Story: LTZ-S042
+Epic: LTZ-E3
+GitLab issue: see imports/gitlab (title contains LTZ-S042)
+Phase: 3",LTZ-E3,LTZ-E3,,Medium,"ltz,phase-3,ga,conditional-access",8,LTZ-S042
+Story,[LTZ-S043] GA evidence pack and sign-off,"Collect metrics vs executive success criteria; steering sign-off.
+
+Estimate: 16h (P3-05)
+
+Story: LTZ-S043
+Epic: LTZ-E3
+GitLab issue: see imports/gitlab (title contains LTZ-S043)
+Phase: 3",LTZ-E3,LTZ-E3,,Medium,"ltz,phase-3,ga,pm",4,LTZ-S043
+Story,[LTZ-S050] Execute Entra request catalog (REQ-E*),"Draft and track all REQ-E items in ENTRA_REQUESTS.md; IAM implementation support.
+
+Estimate: 40h (XC-01)
+SSSD OIDC app already done — exclude rework.
+
+Story: LTZ-S050
+Epic: LTZ-EX
+GitLab issue: see imports/gitlab (title contains LTZ-S050)
+Phase: X",LTZ-EX,LTZ-EX,,Medium,"ltz,phase-X,entra-req,iam",10,LTZ-S050
+Story,[LTZ-S051] Maintain architecture docs in workstation-environment,"Keep runbooks and implementation docs current.
+
+Estimate: 24h (XC-02)
+Repo: workstation-environment
+
+Story: LTZ-S051
+Epic: LTZ-EX
+GitLab issue: see imports/gitlab (title contains LTZ-S051)
+Phase: X",LTZ-EX,LTZ-EX,,Medium,"ltz,phase-X,docs",6,LTZ-S051
+Story,[LTZ-S052] Program agile hygiene,"Ceremonies, burndown, hour tracking vs COST_ESTIMATES.md.
+
+Estimate: 48h (XC-03)
+
+Story: LTZ-S052
+Epic: LTZ-EX
+GitLab issue: see imports/gitlab (title contains LTZ-S052)
+Phase: X",LTZ-EX,LTZ-EX,,Medium,"ltz,phase-X,pm",12,LTZ-S052
+Sub-task,[LTZ-T001] Provision AWX VMs/K8s namespace,"Infra for AWX
+
+Parent story: LTZ-S001
+Task: LTZ-T001",,,LTZ-S001,Medium,"ltz,task",2,LTZ-T001
+Sub-task,[LTZ-T002] Configure AWX backup cron and document restore,"DR
+
+Parent story: LTZ-S001
+Task: LTZ-T002",,,LTZ-S001,Medium,"ltz,task",2,LTZ-T002
+Sub-task,[LTZ-T003] Validate TPM presence on pilot hardware list,"Hardware allowlist
+
+Parent story: LTZ-S013
+Task: LTZ-T003",,,LTZ-S013,Medium,"ltz,task",2,LTZ-T003
+Sub-task,[LTZ-T004] Document PIN SOP and SO PIN escrow,"Security
+
+Parent story: LTZ-S013
+Task: LTZ-T004",,,LTZ-S013,Medium,"ltz,task",2,LTZ-T004
+Sub-task,[LTZ-T005] File REQ-E02 CA chain upload ticket,"IAM ticket
+
+Parent story: LTZ-S015
+Task: LTZ-T005",,,LTZ-S015,Medium,"ltz,task",1,LTZ-T005
+Sub-task,[LTZ-T006] File REQ-E03–E07 CBA method tickets,"IAM tickets
+
+Parent story: LTZ-S015
+Task: LTZ-T006",,,LTZ-S015,Medium,"ltz,task",2,LTZ-T006
+Sub-task,[LTZ-T007] File REQ-E10–E12 Intune tickets,"IAM/Intune tickets
+
+Parent story: LTZ-S012
+Task: LTZ-T007",,,LTZ-S012,Medium,"ltz,task",1,LTZ-T007
+Sub-task,[LTZ-T008] Change request for AD CS workload intermediate,"PKI CR
+
+Parent story: LTZ-S020
+Task: LTZ-T008",,,LTZ-S020,Medium,"ltz,task",2,LTZ-T008
+Sub-task,[LTZ-T009] Choose trust domain name and document,"SPIRE
+
+Parent story: LTZ-S030
+Task: LTZ-T009",,,LTZ-S030,Medium,"ltz,task",1,LTZ-T009
+Sub-task,[LTZ-T010] File REQ-E15 workload federation ticket,"IAM ticket
+
+Parent story: LTZ-S040
+Task: LTZ-T010",,,LTZ-S040,Medium,"ltz,task",1,LTZ-T010

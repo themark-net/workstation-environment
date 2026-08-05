@@ -1,41 +1,40 @@
 # Workstation Environment
 
-Architecture, runbooks, and **agile delivery packs** for Linux workstations on the shared **Microsoft Entra / Intune / Conditional Access** Zero Trust plane—plus **AWX** continuous configuration, **MS CA workload certificates**, and **SPIRE** for non-human identity.
+Ansible-oriented workspace for uniform Linux workstations on the **Microsoft Entra / Intune / Conditional Access** Zero Trust plane, plus architecture and **Jira/GitLab delivery imports** for the Linux Zero Trust (LTZ) program.
 
-## Documentation map
+## Quick links
 
-| Path | What |
+| Area | Link |
 |------|------|
-| [docs/executive/EXECUTIVE-PROPOSAL.md](docs/executive/EXECUTIVE-PROPOSAL.md) | Leadership proposal + ask |
-| [docs/executive/COST-ESTIMATES.md](docs/executive/COST-ESTIMATES.md) | ~952 person-hours breakdown |
-| [docs/implementation/IMPLEMENTATION-PLAN.md](docs/implementation/IMPLEMENTATION-PLAN.md) | Phased delivery plan |
-| [docs/implementation/entra-access-requests.md](docs/implementation/entra-access-requests.md) | Entra/Intune/PKI request templates |
-| [docs/project/](docs/project/) | **Jira CSV + GitLab CSV imports** |
-| [docs/architecture/](docs/architecture/) | Planes, SPIRE, workload PKI |
-| [docs/runbooks/](docs/runbooks/) | Operational ZT runbooks |
+| **Docs index** | [docs/README.md](docs/README.md) |
+| **Executive proposal** | [docs/implementation/EXECUTIVE_PROPOSAL.md](docs/implementation/EXECUTIVE_PROPOSAL.md) |
+| **Implementation plan** | [docs/implementation/IMPLEMENTATION_PLAN.md](docs/implementation/IMPLEMENTATION_PLAN.md) |
+| **Man-hour estimates** | [docs/implementation/COST_ESTIMATES.md](docs/implementation/COST_ESTIMATES.md) |
+| **Entra IAM request catalog** | [docs/implementation/ENTRA_REQUESTS.md](docs/implementation/ENTRA_REQUESTS.md) |
+| **Jira / GitLab imports** | [imports/README.md](imports/README.md) |
 
-## Hard requirements
+## Supported (base playbook)
 
-- **No USB** for day-to-day Entra passwordless → **TPM + Entra CBA**
-- User SSSD OIDC hybrid: **done** (out of band)
-- **Goldimage** Ansible: SSH + YubiKey admin baselines (consume by tag)
-- New **AWX OSS** + **SPIRE** in scope for management/workload planes
+- RHEL-based: Rocky, Alma, RHEL  
+- Debian-based: Ubuntu, Debian, Mint, Pop!_OS, Zorin  
 
-## Base playbook (lab)
+## Program assumptions
+
+- **SSSD OIDC** (user-facing) and **hybrid UID/GID** (custom SSSD + AD hybrid accounts) are **done**.  
+- **goldimage** playbooks exist for SSH + YubiKey **admin** baselines.  
+- Deploy a **new AWX** (OSS) for Zero Trust policy packs.  
+- **SPIRE** is Phase 2+ (workload), not a substitute for Entra CBA.  
+- **No USB** for daily Entra passwordless — **TPM + Entra CBA**.  
+- Entra changes require formal requests ([ENTRA_REQUESTS.md](docs/implementation/ENTRA_REQUESTS.md)).
+
+## Base playbook usage
 
 ```bash
 ansible-playbook -i inventory.yml setup-workstation.yml --become
 ```
 
-Enterprise ZT delivery is documented under **docs/**—not only this sample playbook.
+Enterprise delivery uses AWX + goldimage + zt-awx-config (see implementation plan).
 
-## Project import (PMO)
+## Planning total
 
-1. Read [docs/project/README.md](docs/project/README.md)
-2. Import [docs/project/jira/jira-issues.csv](docs/project/jira/jira-issues.csv)
-3. Import [docs/project/gitlab/gitlab-issues.csv](docs/project/gitlab/gitlab-issues.csv)
-4. Fill [docs/project/mapping/jira-gitlab-crosswalk.csv](docs/project/mapping/jira-gitlab-crosswalk.csv)
-
-## License / use
-
-Internal architecture and delivery artifacts for the LZT-WWI program.
+Approximately **1,300 man-hours** + **15% contingency ≈ 1,495 h** (~9 FTE-months). See cost document for phase gates.

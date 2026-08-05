@@ -1,0 +1,716 @@
+title,description,issue_type,labels,weight,milestone
+"[EPIC LTZ-E0] Phase 0 — Foundations (AWX, repos, goldimage)","Deploy new AWX, GitLab repos, integrate goldimage SSH/YubiKey baselines, agile imports.
+
+**Jira Epic:** LTZ-E0
+**Phase:** 0
+**Weight (SP):** 40
+
+Architecture: workstation-environment repo docs/",issue,"epic,ltz,phase-0,LTZ-E0",10,LTZ Phase 0
+[EPIC LTZ-E1] Phase 1 — Device trust & TPM Entra CBA,"Intune Linux, trust agent, TPM-CBA no-USB, Conditional Access pilot.
+
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Weight (SP):** 105
+
+Architecture: workstation-environment repo docs/",issue,"epic,ltz,phase-1,LTZ-E1",10,LTZ Phase 1
+[EPIC LTZ-E1B] Phase 1b — Workload MS CA certificates,"Workload intermediate, agent certs, reduce static secrets / service account privilege.
+
+**Jira Epic:** LTZ-E1B
+**Phase:** 1b
+**Weight (SP):** 40
+
+Architecture: workstation-environment repo docs/",issue,"epic,ltz,phase-1b,LTZ-E1B",10,LTZ Phase 1b
+[EPIC LTZ-E2] Phase 2 — SPIRE workload identity fabric,"SPIRE HA, UpstreamAuthority, server/k8s agents, pilot mTLS.
+
+**Jira Epic:** LTZ-E2
+**Phase:** 2
+**Weight (SP):** 60
+
+Architecture: workstation-environment repo docs/",issue,"epic,ltz,phase-2,LTZ-E2",10,LTZ Phase 2
+[EPIC LTZ-E3] Phase 3 — Federation & GA,"Entra workload federation, expand CA, GA evidence.
+
+**Jira Epic:** LTZ-E3
+**Phase:** 3
+**Weight (SP):** 35
+
+Architecture: workstation-environment repo docs/",issue,"epic,ltz,phase-3,LTZ-E3",10,LTZ Phase 3
+"[EPIC LTZ-EX] Cross-cutting — Entra REQs, governance, PM","REQ-E catalog execution support, architecture, agile hygiene.
+
+**Jira Epic:** LTZ-EX
+**Phase:** X
+**Weight (SP):** 45
+
+Architecture: workstation-environment repo docs/",issue,"epic,ltz,phase-X,LTZ-EX",10,LTZ Phase X
+[LTZ-S001] Deploy AWX open-source instance,"Deploy new AWX (OSS) with backup, RBAC, network access to managed hosts and CA endpoints. Isolated from unrelated automation if required.
+
+Estimate: 40h (P0-01)
+Repo: zt-awx-config, infra as code as applicable
+DoD: AWX healthy; admin access documented; restore tested once.
+
+**Jira Story:** LTZ-S001
+**Jira Epic:** LTZ-E0
+**Phase:** 0
+**Story points:** 10
+**Est hours:** ~40
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-0,LTZ-E0,awx,platform",10,LTZ Phase 0
+[LTZ-S002] Create GitLab repos and CI lint,"Create zt-awx-config and zt-spire-config; ansible-lint/yaml CI; protect main; MR required.
+
+Estimate: 16h (P0-02)
+Links: workstation-environment docs
+
+**Jira Story:** LTZ-S002
+**Jira Epic:** LTZ-E0
+**Phase:** 0
+**Story points:** 4
+**Est hours:** ~16
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-0,LTZ-E0,gitlab,ci",4,LTZ Phase 0
+[LTZ-S003] Integrate goldimage baseline job,"Add AWX project for goldimage (SSH + YubiKey admin baselines). Job template runs/asserts before ZT packs.
+
+Estimate: 16h (P0-03)
+Repo: goldimage
+
+**Jira Story:** LTZ-S003
+**Jira Epic:** LTZ-E0
+**Phase:** 0
+**Story points:** 4
+**Est hours:** ~16
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-0,LTZ-E0,goldimage,ssh,yubikey",4,LTZ Phase 0
+[LTZ-S004] Inventories and credential design,"Define linux_pilot, linux_workstations, linux_servers, spire_infra. Credential patterns without secrets in git.
+
+Estimate: 16h (P0-04)
+
+**Jira Story:** LTZ-S004
+**Jira Epic:** LTZ-E0
+**Phase:** 0
+**Story points:** 4
+**Est hours:** ~16
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-0,LTZ-E0,awx,inventory",4,LTZ Phase 0
+[LTZ-S005] Import Jira/GitLab agile structure,"Import epics/stories into Jira; import GitLab issues; verify cross-links.
+
+Estimate: 24h (P0-05)
+Files: imports/jira, imports/gitlab
+
+**Jira Story:** LTZ-S005
+**Jira Epic:** LTZ-E0
+**Phase:** 0
+**Story points:** 6
+**Est hours:** ~24
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-0,LTZ-E0,jira,gitlab,pm",6,LTZ Phase 0
+[LTZ-S006] RACI and architecture workshop,"Workshop: planes (user/device/workload), goldimage vs ZT packs, Entra REQ process.
+
+Estimate: 16h (P0-06)
+
+**Jira Story:** LTZ-S006
+**Jira Epic:** LTZ-E0
+**Phase:** 0
+**Story points:** 4
+**Est hours:** ~16
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-0,LTZ-E0,architecture",4,LTZ Phase 0
+[LTZ-S010] Ansible roles: Intune prep and Edge/Broker,"Roles ms_broker_edge, intune_prep for supported distros. Idempotent via AWX.
+
+Estimate: 40h (P1-01)
+Depends: S001
+Note: SSSD OIDC already done — do not regress sssd-hybrid.
+
+**Jira Story:** LTZ-S010
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Story points:** 10
+**Est hours:** ~40
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1,LTZ-E1,ansible,intune,broker",10,LTZ Phase 1
+[LTZ-S011] Trust agent and status.json,"systemd timer writes /var/lib/org-trust/status.json (TPM, LUKS, policy_gen, services).
+
+Estimate: 40h (P1-02)
+Runbook: intune-compliance-bridge.md
+
+**Jira Story:** LTZ-S011
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Story points:** 10
+**Est hours:** ~40
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1,LTZ-E1,trust-agent,compliance",10,LTZ Phase 1
+[LTZ-S012] Intune Linux compliance policies,"Built-in + custom compliance. File REQ-E10–E12.
+
+Estimate: 32h (P1-03)
+Entra/Intune access: limited — formal requests required.
+
+**Jira Story:** LTZ-S012
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Story points:** 8
+**Est hours:** ~32
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1,LTZ-E1,intune,entra-req",8,LTZ Phase 1
+[LTZ-S013] TPM PKCS#11 Entra CBA enrollment path,"No-USB requirement: keygen in TPM, CSR, user CA cert, NSS/broker. Pilot scripts/role auth_tpm_cba.
+
+Estimate: 56h (P1-04)
+Runbook: tpm-cba-no-usb.md
+
+**Jira Story:** LTZ-S013
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Story points:** 14
+**Est hours:** ~56
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1,LTZ-E1,tpm,cba,passwordless",10,LTZ Phase 1
+[LTZ-S014] User CA template and CSR issuance,"Coordinate enterprise user/CBA template; lab + prod path.
+
+Estimate: 40h (P1-05)
+Separate from workload intermediate.
+
+**Jira Story:** LTZ-S014
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Story points:** 10
+**Est hours:** ~40
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1,LTZ-E1,pki,cba",10,LTZ Phase 1
+[LTZ-S015] Entra CBA method and bindings (REQ-E02–E07),"Support IAM to enable CBA, auth binding, username binding, auth strengths. Draft tickets from ENTRA_REQUESTS.md.
+
+Estimate: 40h (P1-06)
+
+**Jira Story:** LTZ-S015
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Story points:** 10
+**Est hours:** ~40
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1,LTZ-E1,entra,cba,iam",10,LTZ Phase 1
+[LTZ-S016] Conditional Access pilot (REQ-E08–E09),"Report-only then On for pilot group: compliant device + phishing-resistant MFA; include Linux.
+
+Estimate: 24h (P1-07)
+
+**Jira Story:** LTZ-S016
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Story points:** 6
+**Est hours:** ~24
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1,LTZ-E1,conditional-access",6,LTZ Phase 1
+[LTZ-S017] AWX enforce schedule and policy_gen,"1–4h enforce; stamp policy_gen; alert on failure; stale = noncompliant.
+
+Estimate: 32h (P1-08)
+
+**Jira Story:** LTZ-S017
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Story points:** 8
+**Est hours:** ~32
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1,LTZ-E1,awx,gpo-parity",8,LTZ Phase 1
+[LTZ-S018] Pilot cohort execution (10–20 users),"Execute pilot, fix issues, collect Entra sign-in + Intune evidence.
+
+Estimate: 48h (P1-09)
+
+**Jira Story:** LTZ-S018
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Story points:** 12
+**Est hours:** ~48
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1,LTZ-E1,pilot",10,LTZ Phase 1
+"[LTZ-S019] Security validation (revoke, break-glass)","CRL revoke test, break-glass, lockout scenarios.
+
+Estimate: 32h (P1-10)
+
+**Jira Story:** LTZ-S019
+**Jira Epic:** LTZ-E1
+**Phase:** 1
+**Story points:** 8
+**Est hours:** ~32
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1,LTZ-E1,security",8,LTZ Phase 1
+[LTZ-S020] Create MS CA workload intermediate,"Dedicated intermediate + template for non-user certs. CRL/AIA HTTP.
+
+Estimate: 32h (P1b-01)
+Runbook: workload-certs-ms-ca.md
+
+**Jira Story:** LTZ-S020
+**Jira Epic:** LTZ-E1B
+**Phase:** 1b
+**Story points:** 8
+**Est hours:** ~32
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1b,LTZ-E1B,pki,workload",8,LTZ Phase 1b
+[LTZ-S021] AWX workload cert enroll/renew role,"SCEP/EST/API enrollment; install paths; renewal timer.
+
+Estimate: 40h (P1b-02)
+
+**Jira Story:** LTZ-S021
+**Jira Epic:** LTZ-E1B
+**Phase:** 1b
+**Story points:** 10
+**Est hours:** ~40
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1b,LTZ-E1B,ansible,workload",10,LTZ Phase 1b
+[LTZ-S022] Systemd hardening and retire static secrets (2 agents),"DynamicUser/User=; LoadCredential; remove API tokens for 2 pilot agents.
+
+Estimate: 40h (P1b-03)
+
+**Jira Story:** LTZ-S022
+**Jira Epic:** LTZ-E1B
+**Phase:** 1b
+**Story points:** 10
+**Est hours:** ~40
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1b,LTZ-E1B,systemd,secrets",10,LTZ Phase 1b
+[LTZ-S023] Workload cert compliance signals,"status.json fields + Intune rules for cert presence/expiry.
+
+Estimate: 16h (P1b-04)
+
+**Jira Story:** LTZ-S023
+**Jira Epic:** LTZ-E1B
+**Phase:** 1b
+**Story points:** 4
+**Est hours:** ~16
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-1b,LTZ-E1B,compliance",4,LTZ Phase 1b
+[LTZ-S030] Deploy SPIRE Server HA,"SPIRE servers + Postgres; trust domain; deploy via AWX from zt-spire-config.
+
+Estimate: 56h (P2-01)
+Runbook: spiffe-spire.md
+
+**Jira Story:** LTZ-S030
+**Jira Epic:** LTZ-E2
+**Phase:** 2
+**Story points:** 14
+**Est hours:** ~56
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-2,LTZ-E2,spire,platform",10,LTZ Phase 2
+[LTZ-S031] SPIRE UpstreamAuthority to MS CA,"Chain SPIRE under workload intermediate / enterprise PKI.
+
+Estimate: 32h (P2-02)
+
+**Jira Story:** LTZ-S031
+**Jira Epic:** LTZ-E2
+**Phase:** 2
+**Story points:** 8
+**Est hours:** ~32
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-2,LTZ-E2,spire,pki",8,LTZ Phase 2
+[LTZ-S032] SPIRE agents and registration policies,"Agents on servers/k8s; systemd/k8s attestors; registration entries.
+
+Estimate: 48h (P2-03)
+
+**Jira Story:** LTZ-S032
+**Jira Epic:** LTZ-E2
+**Phase:** 2
+**Story points:** 12
+**Est hours:** ~48
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-2,LTZ-E2,spire,agents",10,LTZ Phase 2
+[LTZ-S033] Pilot mTLS between two services,"Two services use X.509-SVIDs for mTLS; document ops.
+
+Estimate: 40h (P2-04)
+
+**Jira Story:** LTZ-S033
+**Jira Epic:** LTZ-E2
+**Phase:** 2
+**Story points:** 10
+**Est hours:** ~40
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-2,LTZ-E2,mtls,spire",10,LTZ Phase 2
+[LTZ-S034] SPIRE ops runbooks and DR,"Backup, restore, break-glass, rotation.
+
+Estimate: 24h (P2-05)
+
+**Jira Story:** LTZ-S034
+**Jira Epic:** LTZ-E2
+**Phase:** 2
+**Story points:** 6
+**Est hours:** ~24
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-2,LTZ-E2,spire,ops",6,LTZ Phase 2
+[LTZ-S040] Entra workload identity federation (REQ-E15),"Federated credential for SPIRE OIDC issuer; app registration.
+
+Estimate: 24h (P3-01)
+
+**Jira Story:** LTZ-S040
+**Jira Epic:** LTZ-E3
+**Phase:** 3
+**Story points:** 6
+**Est hours:** ~24
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-3,LTZ-E3,entra,federation",6,LTZ Phase 3
+[LTZ-S041] SPIRE OIDC discovery provider,"Deploy OIDC discovery for JWT-SVID consumers.
+
+Estimate: 24h (P3-02)
+
+**Jira Story:** LTZ-S041
+**Jira Epic:** LTZ-E3
+**Phase:** 3
+**Story points:** 6
+**Est hours:** ~24
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-3,LTZ-E3,spire,oidc",6,LTZ Phase 3
+[LTZ-S042] GA Conditional Access and Intune expansion,"Expand beyond pilot; monitor; support playbooks.
+
+Estimate: 32h (P3-03)
+
+**Jira Story:** LTZ-S042
+**Jira Epic:** LTZ-E3
+**Phase:** 3
+**Story points:** 8
+**Est hours:** ~32
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-3,LTZ-E3,ga,conditional-access",8,LTZ Phase 3
+[LTZ-S043] GA evidence pack and sign-off,"Collect metrics vs executive success criteria; steering sign-off.
+
+Estimate: 16h (P3-05)
+
+**Jira Story:** LTZ-S043
+**Jira Epic:** LTZ-E3
+**Phase:** 3
+**Story points:** 4
+**Est hours:** ~16
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-3,LTZ-E3,ga,pm",4,LTZ Phase 3
+[LTZ-S050] Execute Entra request catalog (REQ-E*),"Draft and track all REQ-E items in ENTRA_REQUESTS.md; IAM implementation support.
+
+Estimate: 40h (XC-01)
+SSSD OIDC app already done — exclude rework.
+
+**Jira Story:** LTZ-S050
+**Jira Epic:** LTZ-EX
+**Phase:** X
+**Story points:** 10
+**Est hours:** ~40
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-X,LTZ-EX,entra-req,iam",10,LTZ Phase X
+[LTZ-S051] Maintain architecture docs in workstation-environment,"Keep runbooks and implementation docs current.
+
+Estimate: 24h (XC-02)
+Repo: workstation-environment
+
+**Jira Story:** LTZ-S051
+**Jira Epic:** LTZ-EX
+**Phase:** X
+**Story points:** 6
+**Est hours:** ~24
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-X,LTZ-EX,docs",6,LTZ Phase X
+[LTZ-S052] Program agile hygiene,"Ceremonies, burndown, hour tracking vs COST_ESTIMATES.md.
+
+Estimate: 48h (XC-03)
+
+**Jira Story:** LTZ-S052
+**Jira Epic:** LTZ-EX
+**Phase:** X
+**Story points:** 12
+**Est hours:** ~48
+
+## Repos
+- workstation-environment (docs)
+- zt-awx-config (playbooks)
+- goldimage (admin baseline)
+- sssd-hybrid (done — do not break)
+- zt-spire-config (phase 2+)
+
+## Entra
+See docs/implementation/ENTRA_REQUESTS.md for REQ-E* if IAM needed.",issue,"story,ltz,phase-X,LTZ-EX,pm",10,LTZ Phase X
+[LTZ-T001] Provision AWX VMs/K8s namespace,"Infra for AWX
+
+**Jira Task:** LTZ-T001
+**Parent story:** LTZ-S001
+**Weight:** 2",task,"task,ltz,parent::LTZ-S001",2,
+[LTZ-T002] Configure AWX backup cron and document restore,"DR
+
+**Jira Task:** LTZ-T002
+**Parent story:** LTZ-S001
+**Weight:** 2",task,"task,ltz,parent::LTZ-S001",2,
+[LTZ-T003] Validate TPM presence on pilot hardware list,"Hardware allowlist
+
+**Jira Task:** LTZ-T003
+**Parent story:** LTZ-S013
+**Weight:** 2",task,"task,ltz,parent::LTZ-S013",2,
+[LTZ-T004] Document PIN SOP and SO PIN escrow,"Security
+
+**Jira Task:** LTZ-T004
+**Parent story:** LTZ-S013
+**Weight:** 2",task,"task,ltz,parent::LTZ-S013",2,
+[LTZ-T005] File REQ-E02 CA chain upload ticket,"IAM ticket
+
+**Jira Task:** LTZ-T005
+**Parent story:** LTZ-S015
+**Weight:** 1",task,"task,ltz,parent::LTZ-S015",1,
+[LTZ-T006] File REQ-E03–E07 CBA method tickets,"IAM tickets
+
+**Jira Task:** LTZ-T006
+**Parent story:** LTZ-S015
+**Weight:** 2",task,"task,ltz,parent::LTZ-S015",2,
+[LTZ-T007] File REQ-E10–E12 Intune tickets,"IAM/Intune tickets
+
+**Jira Task:** LTZ-T007
+**Parent story:** LTZ-S012
+**Weight:** 1",task,"task,ltz,parent::LTZ-S012",1,
+[LTZ-T008] Change request for AD CS workload intermediate,"PKI CR
+
+**Jira Task:** LTZ-T008
+**Parent story:** LTZ-S020
+**Weight:** 2",task,"task,ltz,parent::LTZ-S020",2,
+[LTZ-T009] Choose trust domain name and document,"SPIRE
+
+**Jira Task:** LTZ-T009
+**Parent story:** LTZ-S030
+**Weight:** 1",task,"task,ltz,parent::LTZ-S030",1,
+[LTZ-T010] File REQ-E15 workload federation ticket,"IAM ticket
+
+**Jira Task:** LTZ-T010
+**Parent story:** LTZ-S040
+**Weight:** 1",task,"task,ltz,parent::LTZ-S040",1,

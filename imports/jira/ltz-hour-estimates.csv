@@ -1,0 +1,39 @@
+External ID,Issue Type,Summary,Phase,Story Points,Est Hours (points*4),Epic
+LTZ-S001,Story,Deploy AWX open-source instance,0,10,40,LTZ-E0
+LTZ-S002,Story,Create GitLab repos and CI lint,0,4,16,LTZ-E0
+LTZ-S003,Story,Integrate goldimage baseline job,0,4,16,LTZ-E0
+LTZ-S004,Story,Inventories and credential design,0,4,16,LTZ-E0
+LTZ-S005,Story,Import Jira/GitLab agile structure,0,6,24,LTZ-E0
+LTZ-S006,Story,RACI and architecture workshop,0,4,16,LTZ-E0
+LTZ-S010,Story,Ansible roles: Intune prep and Edge/Broker,1,10,40,LTZ-E1
+LTZ-S011,Story,Trust agent and status.json,1,10,40,LTZ-E1
+LTZ-S012,Story,Intune Linux compliance policies,1,8,32,LTZ-E1
+LTZ-S013,Story,TPM PKCS#11 Entra CBA enrollment path,1,14,56,LTZ-E1
+LTZ-S014,Story,User CA template and CSR issuance,1,10,40,LTZ-E1
+LTZ-S015,Story,Entra CBA method and bindings (REQ-E02–E07),1,10,40,LTZ-E1
+LTZ-S016,Story,Conditional Access pilot (REQ-E08–E09),1,6,24,LTZ-E1
+LTZ-S017,Story,AWX enforce schedule and policy_gen,1,8,32,LTZ-E1
+LTZ-S018,Story,Pilot cohort execution (10–20 users),1,12,48,LTZ-E1
+LTZ-S019,Story,"Security validation (revoke, break-glass)",1,8,32,LTZ-E1
+LTZ-S020,Story,Create MS CA workload intermediate,1b,8,32,LTZ-E1B
+LTZ-S021,Story,AWX workload cert enroll/renew role,1b,10,40,LTZ-E1B
+LTZ-S022,Story,Systemd hardening and retire static secrets (2 agents),1b,10,40,LTZ-E1B
+LTZ-S023,Story,Workload cert compliance signals,1b,4,16,LTZ-E1B
+LTZ-S030,Story,Deploy SPIRE Server HA,2,14,56,LTZ-E2
+LTZ-S031,Story,SPIRE UpstreamAuthority to MS CA,2,8,32,LTZ-E2
+LTZ-S032,Story,SPIRE agents and registration policies,2,12,48,LTZ-E2
+LTZ-S033,Story,Pilot mTLS between two services,2,10,40,LTZ-E2
+LTZ-S034,Story,SPIRE ops runbooks and DR,2,6,24,LTZ-E2
+LTZ-S040,Story,Entra workload identity federation (REQ-E15),3,6,24,LTZ-E3
+LTZ-S041,Story,SPIRE OIDC discovery provider,3,6,24,LTZ-E3
+LTZ-S042,Story,GA Conditional Access and Intune expansion,3,8,32,LTZ-E3
+LTZ-S043,Story,GA evidence pack and sign-off,3,4,16,LTZ-E3
+LTZ-S050,Story,Execute Entra request catalog (REQ-E*),X,10,40,LTZ-EX
+LTZ-S051,Story,Maintain architecture docs in workstation-environment,X,6,24,LTZ-EX
+LTZ-S052,Story,Program agile hygiene,X,12,48,LTZ-EX
+LTZ-E0,Epic,"Phase 0 — Foundations (AWX, repos, goldimage)",0,40,160,LTZ-E0
+LTZ-E1,Epic,Phase 1 — Device trust & TPM Entra CBA,1,105,420,LTZ-E1
+LTZ-E1B,Epic,Phase 1b — Workload MS CA certificates,1b,40,160,LTZ-E1B
+LTZ-E2,Epic,Phase 2 — SPIRE workload identity fabric,2,60,240,LTZ-E2
+LTZ-E3,Epic,Phase 3 — Federation & GA,3,35,140,LTZ-E3
+LTZ-EX,Epic,"Cross-cutting — Entra REQs, governance, PM",X,45,180,LTZ-EX

@@ -1,0 +1,52 @@
+{
+  "program": "LTZ",
+  "jira_project_key_suggestion": "LTZ",
+  "gitlab_group_suggestion": "linux-zero-trust",
+  "repos": {
+    "workstation-environment": "Architecture, runbooks, imports (this repo)",
+    "goldimage": "SSH + YubiKey admin baselines (existing)",
+    "sssd-hybrid": "Custom SSSD OIDC + hybrid UID/GID (done)",
+    "zt-awx-config": "New \u2014 AWX playbooks/inventories",
+    "zt-spire-config": "New \u2014 SPIRE config"
+  },
+  "link_convention": {
+    "jira_summary_prefix": "[LTZ-S###] or [LTZ-E#]",
+    "gitlab_title_same": true,
+    "gitlab_description_must_contain": "Jira Story: LTZ-S###",
+    "jira_description_must_contain": "GitLab issue"
+  },
+  "epics": [
+    {
+      "jira": "LTZ-E0",
+      "title": "Phase 0 \u2014 Foundations (AWX, repos, goldimage)",
+      "phase": "0"
+    },
+    {
+      "jira": "LTZ-E1",
+      "title": "Phase 1 \u2014 Device trust & TPM Entra CBA",
+      "phase": "1"
+    },
+    {
+      "jira": "LTZ-E1B",
+      "title": "Phase 1b \u2014 Workload MS CA certificates",
+      "phase": "1b"
+    },
+    {
+      "jira": "LTZ-E2",
+      "title": "Phase 2 \u2014 SPIRE workload identity fabric",
+      "phase": "2"
+    },
+    {
+      "jira": "LTZ-E3",
+      "title": "Phase 3 \u2014 Federation & GA",
+      "phase": "3"
+    },
+    {
+      "jira": "LTZ-EX",
+      "title": "Cross-cutting \u2014 Entra REQs, governance, PM",
+      "phase": "X"
+    }
+  ],
+  "story_count": 32,
+  "task_count": 10
+}
