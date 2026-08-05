@@ -1,45 +1,41 @@
 # Workstation Environment
 
-Ansible-based setup for uniform Linux workstation/desktop environments that participate in the **same Microsoft Entra / Intune / Conditional Access Zero Trust plane** as Windows.
+Architecture, runbooks, and **agile delivery packs** for Linux workstations on the shared **Microsoft Entra / Intune / Conditional Access** Zero Trust plane—plus **AWX** continuous configuration, **MS CA workload certificates**, and **SPIRE** for non-human identity.
 
-## Supported
+## Documentation map
 
-- RHEL-based: Rocky, Alma, RHEL
-- Debian-based: Ubuntu, Debian, Mint, Pop!_OS, Zorin
-- Basic support for non-systemd (limited)
+| Path | What |
+|------|------|
+| [docs/executive/EXECUTIVE-PROPOSAL.md](docs/executive/EXECUTIVE-PROPOSAL.md) | Leadership proposal + ask |
+| [docs/executive/COST-ESTIMATES.md](docs/executive/COST-ESTIMATES.md) | ~952 person-hours breakdown |
+| [docs/implementation/IMPLEMENTATION-PLAN.md](docs/implementation/IMPLEMENTATION-PLAN.md) | Phased delivery plan |
+| [docs/implementation/entra-access-requests.md](docs/implementation/entra-access-requests.md) | Entra/Intune/PKI request templates |
+| [docs/project/](docs/project/) | **Jira CSV + GitLab CSV imports** |
+| [docs/architecture/](docs/architecture/) | Planes, SPIRE, workload PKI |
+| [docs/runbooks/](docs/runbooks/) | Operational ZT runbooks |
 
-## Features (base playbook)
+## Hard requirements
 
-- Core tools: screen, vim, dev suite
-- Unlimited bash history
-- Podman + K8s tools
-- Ceph client
-- Modern sysadmin CLI tools
-- SPIRE agent framework (legacy note: side-by-side experiments with hardware auth)
+- **No USB** for day-to-day Entra passwordless → **TPM + Entra CBA**
+- User SSSD OIDC hybrid: **done** (out of band)
+- **Goldimage** Ansible: SSH + YubiKey admin baselines (consume by tag)
+- New **AWX OSS** + **SPIRE** in scope for management/workload planes
 
-## Zero Trust / Entra direction (docs)
+## Base playbook (lab)
 
-**Hard requirement:** primary Entra phishing-resistant auth is **TPM-backed certificate-based authentication (no USB dongle)** for UX parity with Windows Hello–class device-bound credentials.
+```bash
+ansible-playbook -i inventory.yml setup-workstation.yml --become
+```
 
-| Doc | Description |
-|-----|-------------|
-| [docs/README.md](docs/README.md) | Doc index |
-| [Linux Zero Trust with Entra](docs/runbooks/linux-zero-trust-entra.md) | Master architecture & funding narrative |
-| [TPM CBA (no USB)](docs/runbooks/tpm-cba-no-usb.md) | Virtual smart card in platform TPM |
-| [AWX GPO parity](docs/runbooks/ansible-awx-gpo-parity.md) | Continuous Ansible policy + compliance |
-| [Intune compliance bridge](docs/runbooks/intune-compliance-bridge.md) | status.json → custom compliance → CA |
+Enterprise ZT delivery is documented under **docs/**—not only this sample playbook.
 
-Related automation repo: [ansible-workstation-environment](https://github.com/themark-net/ansible-workstation-environment).
+## Project import (PMO)
 
-## Usage
+1. Read [docs/project/README.md](docs/project/README.md)
+2. Import [docs/project/jira/jira-issues.csv](docs/project/jira/jira-issues.csv)
+3. Import [docs/project/gitlab/gitlab-issues.csv](docs/project/gitlab/gitlab-issues.csv)
+4. Fill [docs/project/mapping/jira-gitlab-crosswalk.csv](docs/project/mapping/jira-gitlab-crosswalk.csv)
 
-1. Clone this repo
-2. Adjust `inventory.yml`
-3. `ansible-playbook -i inventory.yml setup-workstation.yml --become`
+## License / use
 
-See **docs/** for enterprise Zero Trust runbooks (Entra CBA, Intune, AWX).
-
-## Notes
-
-- Local user auth (e.g. SSSD OIDC) is deployed via Ansible and remains separate from cloud CBA.
-- YubiKey/USB may exist for break-glass only; **not** required for day-to-day Entra auth under the no-USB requirement.
+Internal architecture and delivery artifacts for the LZT-WWI program.
