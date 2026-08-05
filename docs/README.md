@@ -13,6 +13,14 @@ Operational and architectural docs for managed Linux workstations on the **same 
 | [Workload certs (MS CA intermediate)](runbooks/workload-certs-ms-ca.md) | Non-user service certs; systemd vs crypto identity |
 | [SPIFFE / SPIRE](runbooks/spiffe-spire.md) | Workload fabric; phases; not a CBA substitute |
 
+## Proof of concept (pre-tenant lab)
+
+| Document | Purpose |
+|----------|---------|
+| [POC path](poc/POC_PATH.md) | Offline validation objectives & checklist |
+| [Lab deploy](../lab/README.md) | Proxmox OpenTofu + Ansible lab |
+
+
 ## Implementation & delivery
 
 | Document | Purpose |

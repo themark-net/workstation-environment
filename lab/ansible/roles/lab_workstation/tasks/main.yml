@@ -1,0 +1,116 @@
+---
+- name: Install TPM and crypto packages
+  ansible.builtin.apt:
+    name:
+      - tpm2-tools
+      - tpm2-abrmd
+      - libtpm2-pkcs11-1
+      - tpm2-pkcs11-tools
+      - p11-kit
+      - libengine-pkcs11-openssl
+      - openssl
+      - jq
+      - curl
+    state: present
+    update_cache: true
+  failed_when: false
+
+- name: Ensure tpm2-abrmd running when present
+  ansible.builtin.systemd:
+    name: tpm2-abrmd
+    state: started
+    enabled: true
+  failed_when: false
+
+- name: Trust agent directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /var/lib/org-trust
+    - /usr/local/lib/ltz
+
+- name: Install trust agent script
+  ansible.builtin.copy:
+    src: trust-agent.sh
+    dest: /usr/local/lib/ltz/trust-agent.sh
+    mode: "0755"
+
+- name: Install policy apply script
+  ansible.builtin.copy:
+    src: policy-apply.sh
+    dest: /usr/local/lib/ltz/policy-apply.sh
+    mode: "0755"
+
+- name: Trust agent unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/org-trust-agent.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ lab trust agent
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/lib/ltz/trust-agent.sh
+
+- name: Trust agent timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/org-trust-agent.timer
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Run LTZ trust agent every 15m
+      [Timer]
+      OnBootSec=1min
+      OnUnitActiveSec=15min
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+
+- name: Policy unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-policy.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ lab policy apply
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/lib/ltz/policy-apply.sh
+
+- name: Policy timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-policy.timer
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ policy every 30m
+      [Timer]
+      OnBootSec=2min
+      OnUnitActiveSec=30min
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+
+- name: Enable timers and run once
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - org-trust-agent.timer
+    - ltz-policy.timer
+
+- name: Run trust agent now
+  ansible.builtin.command: /usr/local/lib/ltz/trust-agent.sh
+
+- name: Run policy now
+  ansible.builtin.command: /usr/local/lib/ltz/policy-apply.sh
+
+- name: Helper for TPM enroll (documented manual/semi-auto)
+  ansible.builtin.copy:
+    src: tpm-enroll-lab.sh
+    dest: /usr/local/bin/ltz-tpm-enroll-lab
+    mode: "0755"

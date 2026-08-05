@@ -1,0 +1,71 @@
+---
+- name: Install python3
+  ansible.builtin.apt:
+    name: [python3, openssl]
+    state: present
+    update_cache: true
+
+- name: Workload dirs
+  ansible.builtin.file:
+    path: /var/lib/ltz-workload
+    state: directory
+    mode: "0755"
+
+- name: Self-signed workload identity (lab stand-in until CA sign)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    cd /var/lib/ltz-workload
+    if [ ! -f cert.pem ]; then
+      openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 90 \
+        -subj "/CN={{ workload_name | default(inventory_hostname) }}/O=LTZ Lab Workload"
+    fi
+  args:
+    executable: /bin/bash
+
+- name: Tiny mTLS-aware echo service
+  ansible.builtin.copy:
+    dest: /usr/local/bin/ltz-workload-echo.py
+    mode: "0755"
+    content: |
+      #!/usr/bin/env python3
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import ssl, os
+      PORT = int(os.environ.get("PORT", "8443"))
+      class H(BaseHTTPRequestHandler):
+          def do_GET(self):
+              self.send_response(200)
+              self.end_headers()
+              self.wfile.write(b"ltz-workload-ok\n")
+          def log_message(self, *a):
+              return
+      ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+      ctx.load_cert_chain("/var/lib/ltz-workload/cert.pem", "/var/lib/ltz-workload/key.pem")
+      # optional client auth when lab root present
+      root = "/usr/local/share/ca-certificates/ltz-lab-root.crt"
+      if os.path.exists(root):
+          ctx.verify_mode = ssl.CERT_OPTIONAL
+          ctx.load_verify_locations(root)
+      httpd = HTTPServer(("0.0.0.0", PORT), H)
+      httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
+      httpd.serve_forever()
+
+- name: Workload unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-workload.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ lab workload {{ workload_name | default('svc') }}
+      After=network.target
+      [Service]
+      ExecStart=/usr/bin/python3 /usr/local/bin/ltz-workload-echo.py
+      Restart=on-failure
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable workload
+  ansible.builtin.systemd:
+    name: ltz-workload
+    enabled: true
+    state: started
+    daemon_reload: true

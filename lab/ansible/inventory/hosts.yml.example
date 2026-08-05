@@ -1,0 +1,31 @@
+all:
+  vars:
+    ansible_user: ltz
+    ansible_python_interpreter: /usr/bin/python3
+    lab_domain: ltz.lab
+    lab_ca_dns: ltz-lab-ca.ltz.lab
+  children:
+    lab_ca:
+      hosts:
+        ltz-lab-ca:
+          ansible_host: 10.88.88.10
+    lab_rp:
+      hosts:
+        ltz-lab-rp:
+          ansible_host: 10.88.88.11
+    lab_workstations:
+      hosts:
+        ltz-lab-ws1:
+          ansible_host: 10.88.88.20
+    lab_workloads:
+      hosts:
+        ltz-lab-svc-a:
+          ansible_host: 10.88.88.31
+          workload_name: svc-a
+        ltz-lab-svc-b:
+          ansible_host: 10.88.88.32
+          workload_name: svc-b
+    lab_spire:
+      hosts:
+        ltz-lab-spire:
+          ansible_host: 10.88.88.40

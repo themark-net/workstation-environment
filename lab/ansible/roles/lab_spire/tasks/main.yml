@@ -1,0 +1,30 @@
+---
+- name: Note SPIRE lab install
+  ansible.builtin.debug:
+    msg: >-
+      SPIRE full binary install is version-sensitive. This role drops a stub unit and
+      install script. Run /usr/local/lib/ltz/install-spire-lab.sh on the host or
+      extend this role with a pinned SPIRE release for your environment.
+
+- name: Dir
+  ansible.builtin.file:
+    path: /usr/local/lib/ltz
+    state: directory
+    mode: "0755"
+
+- name: Install helper script
+  ansible.builtin.copy:
+    dest: /usr/local/lib/ltz/install-spire-lab.sh
+    mode: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      VER=1.10.4
+      cd /tmp
+      curl -fsSL -o spire.tgz \
+        "https://github.com/spiffe/spire/releases/download/v${VER}/spire-${VER}-linux-amd64-musl.tar.gz"
+      tar -xzf spire.tgz
+      install -m 0755 spire-${VER}/bin/spire-server /usr/local/bin/spire-server
+      install -m 0755 spire-${VER}/bin/spire-agent /usr/local/bin/spire-agent
+      mkdir -p /etc/spire/server /var/lib/spire
+      echo "Installed SPIRE ${VER}. Write server.conf and enable systemd next."

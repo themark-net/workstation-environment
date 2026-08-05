@@ -1,0 +1,16 @@
+services:
+  lab-ca:
+    image: smallstep/step-ca:0.28.1
+    environment:
+      DOCKER_STEPCA_INIT_NAME: LTZ Lab CA
+      DOCKER_STEPCA_INIT_DNS_NAMES: lab-ca,localhost
+    volumes:
+      - ./data/ca:/home/step
+    ports:
+      - "8443:9000"
+  lab-rp:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8444:443"

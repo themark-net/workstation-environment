@@ -1,0 +1,26 @@
+---
+- name: Bootstrap all lab hosts
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure baseline packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - jq
+          - gnupg
+          - openssl
+          - python3
+        state: present
+        update_cache: true
+
+    - name: Read lab role file if present
+      ansible.builtin.slurp:
+        src: /etc/ltz-lab-role
+      register: role_file
+      failed_when: false
+
+    - name: Show role
+      ansible.builtin.debug:
+        msg: "{{ role_file.content | default('') | b64decode | trim }}"

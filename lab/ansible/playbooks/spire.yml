@@ -1,0 +1,6 @@
+---
+- name: SPIRE server (lab)
+  hosts: lab_spire
+  become: true
+  roles:
+    - lab_spire

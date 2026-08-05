@@ -1,0 +1,14 @@
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+terraform/crash.log
+ansible/inventory/hosts.yml
+ansible/*.retry
+evidence/*
+!evidence/.gitkeep
+docker/data/
+*.pem
+*.key
+!**/files/.gitkeep

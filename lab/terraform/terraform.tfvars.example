@@ -1,0 +1,23 @@
+proxmox_endpoint     = "https://192.168.1.10:8006/"
+proxmox_api_token    = "terraform@pam!ltz=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+proxmox_insecure     = true
+proxmox_node         = "pve"
+proxmox_ssh_username = "root"
+template_vm_id       = 9000
+datastore_id         = "local-lvm"
+snippet_datastore_id = "local"
+bridge               = "vmbr0"
+ssh_public_key       = "ssh-ed25519 AAAA... your-key"
+lab_user             = "ltz"
+dns_domain           = "ltz.lab"
+enable_spire_vm      = true
+vm_start_id          = 8800
+# vm_ip_cidr_map = {
+#   ca = "10.88.88.10/24"
+#   rp = "10.88.88.11/24"
+#   ws1 = "10.88.88.20/24"
+#   svc_a = "10.88.88.31/24"
+#   svc_b = "10.88.88.32/24"
+#   spire = "10.88.88.40/24"
+# }
+# gateway = "10.88.88.1"

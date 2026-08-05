@@ -1,0 +1,78 @@
+---
+- name: Install nginx and openssl
+  ansible.builtin.apt:
+    name: [nginx, openssl, python3]
+    state: present
+    update_cache: true
+
+- name: PKI dirs
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop: [/etc/ltz-lab/pki, /var/cache/ltz-gate]
+
+- name: Generate RP server cert if missing
+  ansible.builtin.shell: |
+    set -euo pipefail
+    cd /etc/ltz-lab/pki
+    if [ ! -f server.crt ]; then
+      openssl req -x509 -newkey rsa:2048 -nodes -keyout server.key -out server.crt -days 365 \
+        -subj "/CN={{ inventory_hostname }}/O=LTZ Lab RP"
+    fi
+  args:
+    executable: /bin/bash
+
+- name: Install gate API
+  ansible.builtin.copy:
+    dest: /usr/local/bin/ltz-gate-api.py
+    mode: "0755"
+    src: ltz-gate-api.py
+
+- name: Gate unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-gate.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ lab compliance gate
+      After=network.target
+      [Service]
+      Environment=LTZ_GATE_PORT={{ gate_port }}
+      Environment=LTZ_STATUS_CACHE=/var/cache/ltz-gate/status.json
+      ExecStart=/usr/bin/python3 /usr/local/bin/ltz-gate-api.py
+      Restart=on-failure
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable gate
+  ansible.builtin.systemd:
+    name: ltz-gate
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Nginx mTLS site
+  ansible.builtin.template:
+    src: mtls.conf.j2
+    dest: /etc/nginx/sites-available/ltz-mtls
+  notify: reload nginx
+
+- name: Enable site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/ltz-mtls
+    dest: /etc/nginx/sites-enabled/ltz-mtls
+    state: link
+  notify: reload nginx
+
+- name: Disable default site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Nginx started
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: true

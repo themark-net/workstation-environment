@@ -12,6 +12,8 @@ Ansible-oriented workspace for uniform Linux workstations on the **Microsoft Ent
 | **Man-hour estimates** | [docs/implementation/COST_ESTIMATES.md](docs/implementation/COST_ESTIMATES.md) |
 | **Entra IAM request catalog** | [docs/implementation/ENTRA_REQUESTS.md](docs/implementation/ENTRA_REQUESTS.md) |
 | **Jira / GitLab imports** | [imports/README.md](imports/README.md) |
+| **POC path (pre-tenant)** | [docs/poc/POC_PATH.md](docs/poc/POC_PATH.md) |
+| **Lab (Proxmox)** | [lab/README.md](lab/README.md) |
 
 ## Supported (base playbook)
 

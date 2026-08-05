@@ -1,0 +1,47 @@
+---
+- name: Lab CA
+  hosts: lab_ca
+  become: true
+  roles:
+    - lab_ca
+
+- name: Distribute lab root CA
+  hosts: all
+  become: true
+  tasks:
+    - name: Check root artifact on controller
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../artifacts/root_ca.crt"
+      register: root
+      delegate_to: localhost
+      become: false
+
+    - name: Install lab root CA
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../artifacts/root_ca.crt"
+        dest: /usr/local/share/ca-certificates/ltz-lab-root.crt
+        mode: "0644"
+      when: root.stat.exists
+      notify: Update CA certificates
+
+  handlers:
+    - name: Update CA certificates
+      ansible.builtin.command: update-ca-certificates
+
+- name: Lab relying party
+  hosts: lab_rp
+  become: true
+  roles:
+    - lab_rp
+
+- name: Lab workstations
+  hosts: lab_workstations
+  become: true
+  roles:
+    - lab_workstation
+
+- name: Lab workloads
+  hosts: lab_workloads
+  become: true
+  roles:
+    - lab_workload

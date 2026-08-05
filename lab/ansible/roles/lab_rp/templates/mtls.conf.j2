@@ -1,0 +1,17 @@
+server {
+    listen {{ rp_https_port }} ssl;
+    server_name _;
+    ssl_certificate     /etc/ltz-lab/pki/server.crt;
+    ssl_certificate_key /etc/ltz-lab/pki/server.key;
+    ssl_client_certificate /usr/local/share/ca-certificates/ltz-lab-root.crt;
+    ssl_verify_client optional_no_ca;
+    location / {
+        default_type text/plain;
+        return 200 "LTZ lab RP OK\nclient_verify=$ssl_client_verify\ndn=$ssl_client_s_dn\n";
+    }
+    location /secure {
+        if ($ssl_client_verify != SUCCESS) { return 403 "client certificate required\n"; }
+        default_type text/plain;
+        return 200 "LTZ lab mTLS SUCCESS\ndn=$ssl_client_s_dn\n";
+    }
+}

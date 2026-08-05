@@ -1,0 +1,107 @@
+---
+- name: Install step-ca dependencies
+  ansible.builtin.apt:
+    name: [curl, tar, jq]
+    state: present
+    update_cache: true
+
+- name: Create step directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0750"
+  loop:
+    - /etc/step-ca
+    - /var/lib/step-ca
+    - /var/log/step-ca
+
+- name: Download step CLI and step-ca (fixed version)
+  ansible.builtin.get_url:
+    url: "https://dl.smallstep.com/gh-release/cli/gh-release-header/v0.28.2/step_linux_0.28.2_amd64.tar.gz"
+    dest: /tmp/step.tgz
+    mode: "0644"
+
+- name: Download step-ca binary archive
+  ansible.builtin.get_url:
+    url: "https://dl.smallstep.com/gh-release/certificates/gh-release-header/v0.28.1/step-ca_linux_0.28.1_amd64.tar.gz"
+    dest: /tmp/step-ca.tgz
+    mode: "0644"
+
+- name: Extract step
+  ansible.builtin.unarchive:
+    src: /tmp/step.tgz
+    dest: /tmp
+    remote_src: true
+
+- name: Extract step-ca
+  ansible.builtin.unarchive:
+    src: /tmp/step-ca.tgz
+    dest: /tmp
+    remote_src: true
+
+- name: Install binaries
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0755"
+    remote_src: true
+  loop:
+    - { src: "/tmp/step_0.28.2/bin/step", dest: "/usr/local/bin/step" }
+    - { src: "/tmp/step-ca_0.28.1/bin/step-ca", dest: "/usr/local/bin/step-ca" }
+  # paths inside tarball may vary; fallback shell if needed
+
+- name: Password file
+  ansible.builtin.copy:
+    content: "{{ step_ca_password }}"
+    dest: /etc/step-ca/password.txt
+    mode: "0600"
+
+- name: Init CA if missing
+  ansible.builtin.shell: |
+    set -euo pipefail
+    if [ ! -f /etc/step-ca/config/ca.json ]; then
+      step ca init \
+        --name "LTZ Lab CA" \
+        --dns "{{ inventory_hostname }},{{ lab_ca_dns | default(inventory_hostname) }},localhost" \
+        --address ":{{ step_ca_port }}" \
+        --provisioner "{{ step_ca_provisioner }}" \
+        --password-file /etc/step-ca/password.txt \
+        --deployment-type standalone
+      # step ca init writes under ~/.step by default for root — relocate
+      mkdir -p /etc/step-ca/config /etc/step-ca/certs /etc/step-ca/secrets
+      cp -a /root/.step/config/* /etc/step-ca/config/ || true
+      cp -a /root/.step/certs/* /etc/step-ca/certs/ || true
+      cp -a /root/.step/secrets/* /etc/step-ca/secrets/ || true
+    fi
+  args:
+    executable: /bin/bash
+
+- name: systemd unit for step-ca
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/step-ca.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ Lab step-ca
+      After=network.target
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/step-ca /etc/step-ca/config/ca.json --password-file /etc/step-ca/password.txt
+      Restart=on-failure
+      LimitNOFILE=65536
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable step-ca
+  ansible.builtin.systemd:
+    name: step-ca
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Fetch root cert to controller artifacts
+  ansible.builtin.fetch:
+    src: /etc/step-ca/certs/root_ca.crt
+    dest: "{{ playbook_dir }}/../artifacts/root_ca.crt"
+    flat: true
+  failed_when: false
