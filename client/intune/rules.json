@@ -1,0 +1,32 @@
+{
+  "Rules": [
+    {
+      "SettingName": "attested",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://example.invalid/ltz-trust",
+      "RemediationStrings": [
+        {
+          "Language": "en_US",
+          "Title": "Device attestation required",
+          "Description": "This device must complete LTZ thin attestor verification. Contact Linux platform."
+        }
+      ]
+    },
+    {
+      "SettingName": "ticket_fresh",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://example.invalid/ltz-trust",
+      "RemediationStrings": [
+        {
+          "Language": "en_US",
+          "Title": "Attestation ticket expired",
+          "Description": "Renew device attestation (ltz-trust-agent). Ticket must be unexpired."
+        }
+      ]
+    }
+  ]
+}

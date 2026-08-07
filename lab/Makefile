@@ -5,12 +5,12 @@ TFDIR := terraform
 ANDIR := ansible
 
 .PHONY: help tf-init tf-plan tf-apply tf-destroy inventory wait-ssh \
-	ansible-bootstrap ansible-lab ansible-spire validate docker-up docker-down
+	ansible-bootstrap ansible-lab ansible-mvp ansible-spire validate docker-up docker-down
 
 help:
 	@echo "LTZ Lab: tf-init tf-plan tf-apply tf-destroy inventory wait-ssh"
-	@echo "         ansible-bootstrap ansible-lab ansible-spire validate"
-	@echo "         docker-up docker-down"
+	@echo "         ansible-bootstrap ansible-lab ansible-mvp ansible-spire validate"
+	@echo "MVP path: make tf-apply && make wait-ssh && make ansible-mvp && make validate"
 
 tf-init:
 	cd $(TFDIR) && $(TF) init
@@ -36,6 +36,9 @@ ansible-bootstrap:
 
 ansible-lab:
 	$(ANSIBLE) -i $(ANDIR)/inventory/hosts.yml $(ANDIR)/playbooks/site.yml
+
+ansible-mvp:
+	$(ANSIBLE) -i $(ANDIR)/inventory/hosts.yml $(ANDIR)/playbooks/mvp.yml
 
 ansible-spire:
 	$(ANSIBLE) -i $(ANDIR)/inventory/hosts.yml $(ANDIR)/playbooks/spire.yml
