@@ -1,150 +1,167 @@
-# Microsoft Entra / Intune / Graph — Access Request Catalog
+# Microsoft Entra / Intune / Graph — Access Request Packets
 
-Use these **Microsoft-termed** request packets when you have limited Entra rights (same pattern as SSSD OIDC **App registration**). Copy into ServiceNow/Jira/IAM intake.
+**Last updated:** 2026-08-07  
+**Canonical ID catalog:** [ENTRA_REQUESTS.md](ENTRA_REQUESTS.md) (**REQ-M\*** = MVP device compliance, **REQ-F\*** = Future CBA / advanced).
+
+Use these **Microsoft-termed** packets when filing tickets with limited Entra rights. Prefer one ticket per ID. Track with `blocked::entra` until granted.
+
+**Architecture note:** MVP is **compliant device** (Intune + attestor-backed custom compliance). **Entra CBA** is Future Hello-class *user* auth — do not block device trust on CBA.
 
 ---
 
 ## How to use
 
-1. Open one ticket **per request ID** (or one epic with sub-tasks).
-2. Paste **Request title**, **Microsoft product terms**, **Justification**, **Permissions**, **Environments**, **Owners**.
-3. Attach architecture one-pager from [EXECUTIVE-PROPOSAL.md](../executive/EXECUTIVE-PROPOSAL.md).
-4. Track ticket IDs in GitLab issue labels `blocked::entra` until granted.
+1. Open one ticket **per request ID** (or epic with sub-tasks).  
+2. Paste **Request title**, **Microsoft product terms**, **Justification**, **Permissions**, **Environments**, **Owners**.  
+3. Attach architecture from [../architecture/MVP-AND-FUTURE-STATE.md](../architecture/MVP-AND-FUTURE-STATE.md).  
+4. Reference mapping table below when older tickets used `REQ-ENTRA-*` / `REQ-E*`.
 
 ---
 
-## REQ-ENTRA-01 — Application registration: AWX SSO (optional P0/P1)
+## Recommended filing order
+
+### MVP (file first)
+
+1. **REQ-M01 / M02** — Intune Linux enrollment + licenses  
+2. **REQ-M03 / M04** — Built-in + **custom compliance** (upload prewritten `client/intune/*`)  
+3. **REQ-M05 → M06** — CA **require compliant device** (report-only → on)  
+4. **REQ-M07** — Break-glass exclusions  
+5. **REQ-M08 / M09** — Optional Graph app (only if collector/automation needs it)  
+6. **REQ-M10** — Architect note: Linux = Intune enrolled, not Autopilot/hybrid join  
+
+### Future (do not block MVP)
+
+7. **REQ-F01–F08** — CBA chain, method, binding, auth strength, CA update for phishing-resistant MFA  
+8. **REQ-F09** — Optional CBA helper app  
+9. **REQ-F10** — SPIRE / workload federation  
+10. **REQ-F11** — PIM for CBA/CA admins  
+
+Optional anytime: AWX SSO app (below) — not on device-trust critical path.
+
+---
+
+## MVP packets (device compliance)
+
+### REQ-M01 — Intune Linux enrollment
 
 | Field | Value |
 |-------|--------|
-| **Microsoft terms** | App registration, Enterprise application, OpenID Connect, redirect URI, single sign-on |
-| **Purpose** | Administrators sign into AWX via Entra ID |
-| **Permissions (Graph)** | Delegated: `openid`, `profile`, `email`; optionally `User.Read` |
-| **Redirect URIs** | `https://<awx-host>/sso/...` (exact paths per AWX OIDC docs) |
-| **Who needs admin** | Application Administrator or Cloud Application Administrator to create app; AWX admins consume client ID/secret or federated credential |
-| **Secret handling** | Prefer certificate credential or federated identity; if client secret, vault in AWX, 90-day rotation |
-| **Similar to** | Existing SSSD OIDC application (reference that app ID) |
+| **Microsoft terms** | Microsoft Intune, MDM authority, enrollment restrictions, Linux |
+| **Purpose** | Corporate Linux may enroll; device objects for compliance |
+| **Actions** | Confirm MDM authority; allow Linux enrollment for pilot group |
+| **Maps from** | former REQ-ENTRA-05 (enrollment portion) |
 
----
-
-## REQ-ENTRA-02 — Application registration: automation / Graph for device or compliance reporting (optional)
+### REQ-M02 — Intune licensing
 
 | Field | Value |
 |-------|--------|
-| **Microsoft terms** | App registration, Application permissions, Microsoft Graph, admin consent |
-| **Purpose** | Read device compliance / inventory for dashboards (if not using Intune portal alone) |
-| **Permissions** | Application: `DeviceManagementManagedDevices.Read.All` and/or `DeviceManagementConfiguration.Read.All` — **least privilege**; justify each |
-| **Admin consent** | Required for application permissions |
-| **Alternative** | Skip app; use Intune UI + export for pilot (reduces scope) |
+| **Microsoft terms** | Group-based licensing, Intune license |
+| **Purpose** | Pilot users can enroll |
 
----
-
-## REQ-ENTRA-03 — Certificate-based authentication (CBA) enablement
+### REQ-M03 — Linux compliance policy (built-in)
 
 | Field | Value |
 |-------|--------|
-| **Microsoft terms** | Certificate-based authentication, authentication methods policy, authentication binding, username binding, certificateUserIds, CRL |
-| **Purpose** | Linux users authenticate to Entra with X.509 certs (TPM-held keys) |
-| **Actions requested** | Enable CBA authentication method for group `sg-linux-cba-pilot`; configure trusted CAs; HTTP CRL endpoints; username binding policy; authentication binding (MFA) for issuer/policy OID |
-| **Roles** | Authentication Policy Administrator / Authentication Administrator / Global Administrator (per tenant model) |
-| **Dependencies** | Enterprise CA chain + CRL reachable from Microsoft cloud |
-| **Not requested** | Disabling passwords tenant-wide |
+| **Microsoft terms** | Compliance policy, Linux, encryption, allowed distributions |
+| **Purpose** | Baseline health signals |
 
----
-
-## REQ-ENTRA-04 — Upload / trust enterprise CA for CBA
+### REQ-M04 — Custom compliance (Linux)
 
 | Field | Value |
 |-------|--------|
-| **Microsoft terms** | Certificate authorities, public key infrastructure, CRL, delta CRL, authentication methods > certificate-based authentication |
-| **Purpose** | Entra trusts User/CBA issuing chain |
-| **Deliverables from PKI** | Root + intermediate CER/PEM, CRL URLs (HTTP) |
-| **Roles** | Same as CBA admin |
+| **Microsoft terms** | Custom compliance, discovery script, rules JSON |
+| **Purpose** | Map **attestor-backed** posture (`attested`, `ticket_fresh`) → Compliant bit |
+| **Artifacts** | `client/intune/discovery.sh`, `client/intune/rules.json` (design repo) |
+| **Maps from** | former REQ-ENTRA-05 (custom portion) |
 
----
-
-## REQ-ENTRA-05 — Intune Linux enrollment & compliance
+### REQ-M05 / M06 — Conditional Access (compliant device)
 
 | Field | Value |
 |-------|--------|
-| **Microsoft terms** | Microsoft Intune, Linux enrollment, Company Portal / Intune app for Linux, compliance policy, custom compliance detection script, device compliance |
-| **Purpose** | Enroll Linux workstations; evaluate compliance; feed Conditional Access |
-| **Actions** | Enable Linux MDM authority as required; create compliance policies (distro, encryption); create **custom compliance** for trust agent JSON; assign to pilot group |
-| **Roles** | Intune Administrator / Endpoint Administrator |
-| **Groups** | `sg-linux-intune-pilot` (users/devices) |
+| **Microsoft terms** | Conditional Access, require compliant device, report-only, cloud apps |
+| **Purpose** | Gate pilot apps for **Linux + Windows** on **compliant device** |
+| **MVP note** | Do **not** require phishing-resistant MFA / CBA unless org already does for all platforms |
+| **Maps from** | former REQ-ENTRA-06 (device half only) |
 
----
-
-## REQ-ENTRA-06 — Conditional Access policies (report-only then on)
+### REQ-M07 — Break-glass exclusions
 
 | Field | Value |
 |-------|--------|
-| **Microsoft terms** | Conditional Access, grant controls, require multifactor authentication, authentication strength, require device to be marked compliant, report-only mode, break-glass accounts |
-| **Purpose** | Gate M365/LOB apps: phishing-resistant + compliant device for Linux+Windows |
-| **Actions** | Create CA policies in **report-only**; include pilot users; exclude break-glass; later switch to on |
-| **Authentication strength** | Include CBA and existing phishing-resistant methods |
-| **Roles** | Conditional Access Administrator / Security Administrator |
+| **Microsoft terms** | Conditional Access exclusions, emergency access accounts |
 
----
-
-## REQ-ENTRA-07 — Identity Broker / PRMFA prerequisites (if tenant settings required)
+### REQ-M08 / M09 — Graph app (optional)
 
 | Field | Value |
 |-------|--------|
-| **Microsoft terms** | Microsoft Identity Broker (Linux), phishing-resistant MFA, certificate authentication, SSO extension |
-| **Purpose** | Broker-mediated cert auth on Linux desktops |
-| **Actions** | Confirm tenant features; document supported broker version; any required enterprise app assignments for broker |
-| **Roles** | IAM + desktop engineering |
+| **Microsoft terms** | App registration, application permissions, admin consent |
+| **Purpose** | Read device/compliance if automation needs Graph (skip if Intune UI suffices) |
+| **Maps from** | former REQ-ENTRA-02 |
 
----
-
-## REQ-ENTRA-08 — Workload identity federation (SPIRE JWT-SVID) — later phase
+### REQ-M10 — Platform documentation
 
 | Field | Value |
 |-------|--------|
-| **Microsoft terms** | Workload identity federation, federated identity credential, app registration or user-assigned managed identity, OIDC issuer |
-| **Purpose** | Non-human workloads exchange SPIRE JWT-SVID for Entra tokens (Azure/Graph) without secrets |
-| **Not for** | Interactive user login |
-| **Phase** | P3+ after SPIRE OIDC discovery provider exists |
+| **Purpose** | Record: Linux = Intune-enrolled device object; **not** classic hybrid AD join / Autopilot |
 
 ---
 
-## REQ-PKI-01 — Workload Intermediate CA + templates
+## Future packets (user CBA / advanced)
+
+### REQ-F01–F05 — CBA enablement & binding
 
 | Field | Value |
 |-------|--------|
-| **Microsoft / PKI terms** | AD CS, subordinate/intermediate CA, certificate template, Client Authentication EKU, SCEP/NDE/EST/CEP (as applicable), auto-enrollment or API issuance |
-| **Purpose** | Issue host/service certs for Linux agents; optional SPIRE upstream |
-| **Separate from** | User smart card / CBA templates |
-| **Owners** | PKI team |
+| **Microsoft terms** | Certificate-based authentication, certificate authorities, authentication binding, username binding, certificateUserIds |
+| **Purpose** | Hello-class **user** passwordless to Entra (TPM PKCS#11) — **not** device attestation |
+| **Maps from** | former REQ-ENTRA-03, REQ-ENTRA-04, REQ-PKI-02 |
 
----
-
-## REQ-PKI-02 — User CBA certificate template for TPM PKCS#11 enrollment
+### REQ-F06–F07 — Auth strength + CA update
 
 | Field | Value |
 |-------|--------|
-| **Terms** | User template, Client Authentication, subject UPN SAN, short validity, non-exportable (client-enforced via TPM) |
-| **Purpose** | Sign CSRs from Linux TPM-backed keys |
-| **Issuance path** | Manual/API/SCEP as designed — **not** Windows auto-enroll GPO |
+| **Microsoft terms** | Authentication strengths, phishing-resistant MFA, Conditional Access |
+| **Purpose** | Add phishing-resistant strength **in addition to** compliant device |
+| **Maps from** | former REQ-ENTRA-06 (MFA half), REQ-ENTRA-07 |
+
+### REQ-F08 — CRL reachability
+
+| Field | Value |
+|-------|--------|
+| **Microsoft terms** | CRL, certificate revocation |
+| **Purpose** | Entra can fetch enterprise CRL for CBA |
+
+### REQ-F10 — Workload identity federation
+
+| Field | Value |
+|-------|--------|
+| **Microsoft terms** | Workload identity federation, federated credential |
+| **Purpose** | SPIRE OIDC issuer → Azure (later phase) |
+| **Maps from** | former REQ-ENTRA-08 |
 
 ---
 
-## Request sequence (week 1)
+## Optional (not device-trust critical)
 
-1. REQ-PKI-01, REQ-PKI-02 (longest lead)  
-2. REQ-ENTRA-03, REQ-ENTRA-04 (CBA)  
-3. REQ-ENTRA-05 (Intune)  
-4. REQ-ENTRA-06 (CA report-only)  
-5. REQ-ENTRA-01 (AWX SSO) if needed  
-6. REQ-ENTRA-02 only if dashboards need Graph  
-7. REQ-ENTRA-08 deferred  
+### AWX SSO app registration
+
+| Field | Value |
+|-------|--------|
+| **Microsoft terms** | App registration, OIDC, redirect URI |
+| **Purpose** | Admins sign into AWX via Entra |
+| **Maps from** | former REQ-ENTRA-01 |
 
 ---
 
-## Evidence to attach
+## ID mapping (legacy → current)
 
-- Link to this repo architecture docs  
-- Pilot group names  
-- CRL reachability test plan  
-- Reference: existing SSSD OIDC app registration (working precedent)
+| Legacy | Current |
+|--------|---------|
+| REQ-ENTRA-05 / REQ-E10–E12 | **REQ-M01–M04** |
+| REQ-ENTRA-06 (device) / REQ-E08–E09 | **REQ-M05–M07** |
+| REQ-ENTRA-02 / REQ-E13–E14 | **REQ-M08–M09** |
+| REQ-ENTRA-03–04, REQ-PKI-02 / REQ-E02–E07 | **REQ-F01–F08** |
+| REQ-ENTRA-07 | **REQ-F06–F07** |
+| REQ-ENTRA-08 / REQ-E15 | **REQ-F10** |
+| REQ-ENTRA-01 | Optional AWX SSO |
+
+Full tables and RACI: [ENTRA_REQUESTS.md](ENTRA_REQUESTS.md).
