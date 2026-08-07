@@ -1,0 +1,125 @@
+{
+  "meta": {
+    "title": "Linux Zero Trust — Compliance-First",
+    "author": "Linux Platform",
+    "date": "August 2026",
+    "classification": "Internal use only",
+    "footer": "Linux Zero Trust  |  Internal briefing"
+  },
+  "theme": {
+    "navy": "11134A",
+    "blue": "1C83C9",
+    "black": "000000",
+    "white": "FFFFFF",
+    "light": "F3F4F6",
+    "gray": "4B5563",
+    "muted": "6B7280"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "kicker": "LINUX PLATFORM",
+      "title": "Linux Zero Trust",
+      "subtitle": "Device compliance first — on the existing Microsoft control plane",
+      "line": "Briefing for security architecture, identity, and platform leadership"
+    },
+    {
+      "id": "problem",
+      "type": "cards",
+      "section": "THE PROBLEM",
+      "title": "Linux is treated as second-class for device trust",
+      "cards": [
+        {"title": "Windows path is clear", "body": "Entra, Intune compliance, and Conditional Access already define a trusted device path."},
+        {"title": "Linux user login works", "body": "SSSD with Entra OIDC is in place. Interactive login is not the gap."},
+        {"title": "Device health is missing", "body": "Without a Compliant device signal, apps block Linux or rely on exceptions."},
+        {"title": "Passwordless is not the blocker", "body": "Certificate-based user sign-in is useful later. It does not unlock device trust today."}
+      ]
+    },
+    {
+      "id": "recommendation",
+      "type": "recommendation",
+      "section": "RECOMMENDATION",
+      "title": "One Microsoft control plane — not a parallel Linux stack",
+      "banner": "Prove device compliance first with Intune and Conditional Access. Passwordless user sign-in and workload certificates come after that pilot is green.",
+      "columns": [
+        {"title": "Now (MVP)", "body": "Attestation service + host agent → Intune compliance → Conditional Access requires a compliant device"},
+        {"title": "Later", "body": "Certificate or passkey user sign-in, continuous Ansible policy, service certificates, optional network 802.1X"},
+        {"title": "Not in scope", "body": "Linux Autopilot, a separate Linux identity provider, or treating user certificates as device compliance"}
+      ]
+    },
+    {
+      "id": "trust-model",
+      "type": "planes",
+      "section": "TRUST MODEL",
+      "title": "Four planes — device trust is the near-term critical path",
+      "planes": [
+        {"number": "1", "title": "Human", "status": "DONE", "body": "SSSD sign-in to Entra\nLater: cert or passkey"},
+        {"number": "2", "title": "Device", "status": "MVP", "body": "Attest → Intune\nCompliant device", "highlight": true},
+        {"number": "3", "title": "Workload", "status": "LATER", "body": "Service certificates\nOptional SPIRE"},
+        {"number": "4", "title": "Network", "status": "LATER", "body": "802.1X machine cert\nSame device PKI"}
+      ]
+    },
+    {
+      "id": "chain",
+      "type": "steps",
+      "section": "DEVICE TRUST CHAIN",
+      "title": "Attestation-backed compliance — fail closed without a valid device credential",
+      "steps": [
+        {"number": "1", "title": "Enroll", "body": "Register the host (lab or Intune)"},
+        {"number": "2", "title": "Attest", "body": "Check device posture"},
+        {"number": "3", "title": "Credential", "body": "Issue short-lived device proof"},
+        {"number": "4", "title": "Report", "body": "Agent reports only with proof"},
+        {"number": "5", "title": "Compliant", "body": "Intune evaluates rules"},
+        {"number": "6", "title": "Access", "body": "Conditional Access uses Compliant"}
+      ]
+    },
+    {
+      "id": "not-building",
+      "type": "reject_list",
+      "section": "WHAT WE ARE NOT BUILDING",
+      "title": "Avoid parallel systems and weak claims",
+      "items": [
+        {"left": "Linux Autopilot clone", "right": "Not supported; wrong enrollment model"},
+        {"left": "Separate Linux-only identity provider", "right": "Splits Conditional Access and weakens integration"},
+        {"left": "User certificates as device proof", "right": "User sign-in is not device compliance"},
+        {"left": "Trust a local script with no remote check", "right": "Easy to forge without attestation"},
+        {"left": "USB keys for everyday passwordless", "right": "Breaks parity with modern Windows UX"},
+        {"left": "Block device work on passwordless tickets", "right": "Wrong dependency order"}
+      ]
+    },
+    {
+      "id": "phasing",
+      "type": "phases",
+      "section": "PHASING",
+      "title": "Ship device compliance first; later work does not block the lab",
+      "phases": [
+        {"number": "1", "title": "Foundations", "detail": "Lab, repos, ownership", "timing": "1–2 weeks", "early": true},
+        {"number": "2", "title": "Device trust build", "detail": "Attestor, agent, Intune scripts", "timing": "4–6 weeks", "early": true},
+        {"number": "3", "title": "Tenant plug-in", "detail": "Intune enroll + Conditional Access", "timing": "Depends on IAM", "early": true},
+        {"number": "4", "title": "Passwordless users", "detail": "Cert or passkey sign-in (optional)", "timing": "After pilot", "early": false},
+        {"number": "5", "title": "Continuous policy", "detail": "Ansible / AWX depth", "timing": "Parallel", "early": false},
+        {"number": "6", "title": "Service & network certs", "detail": "Workload PKI, 802.1X machine auth", "timing": "After pilot", "early": false}
+      ]
+    },
+    {
+      "id": "iam-asks",
+      "type": "numbered_asks",
+      "section": "WHAT WE NEED FROM IDENTITY AND ACCESS",
+      "title": "Clear asks — no internal ticket codes",
+      "asks": [
+        {"number": "1", "title": "Allow Linux devices to enroll in Intune", "body": "Enable Linux enrollment for a pilot group and assign the needed Intune licenses."},
+        {"number": "2", "title": "Accept our compliance scripts", "body": "Add the Linux custom compliance discovery script and rules so posture can set the Compliant flag."},
+        {"number": "3", "title": "Require a compliant device for pilot apps", "body": "Conditional Access in report-only first, then enforce for the pilot. Include break-glass exclusions."},
+        {"number": "4", "title": "Hold passwordless user work until later", "body": "Certificate-based or passkey sign-in is optional after the device pilot succeeds, unless the organization already requires it for everyone."}
+      ]
+    },
+    {
+      "id": "success",
+      "type": "success",
+      "section": "SUCCESS LOOKS LIKE",
+      "body": "Pilot Linux hosts show Compliant in Intune.\nConditional Access grants or denies on that signal.\nAccess fails closed without a valid device credential.\nHost software deploys without lab-only dependencies.",
+      "note": "Architecture and lab live in the workstation-environment repository."
+    }
+  ]
+}
