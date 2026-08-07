@@ -59,3 +59,9 @@ SPIRE issues short-lived **SPIFFE Verifiable Identity Documents (SVIDs)** to **w
 - Replacing admin YubiKey SSH (goldimage) with SPIRE.
 - Desktop interactive login via SVID.
 - Full mesh on every laptop.
+
+---
+
+## Not for 802.1X
+
+SPIRE SVIDs are **workload** identities. **802.1X machine EAP-TLS** uses classic **device X.509 client certs** (attestor + enterprise CA), not SPIFFE IDs. Keep RADIUS on the device CA path. See [device-8021x-eap-tls.md](device-8021x-eap-tls.md).

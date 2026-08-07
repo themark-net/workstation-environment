@@ -9,7 +9,7 @@ Replace static tokens / shared secrets / over-privileged local accounts for **no
 ```text
 Enterprise Root CA
 ├── Intermediate: User / CBA          → TPM user certs → Entra CBA
-└── Intermediate: Workload / Device   → host & service certs → mTLS, APIs
+└── Intermediate: Workload / Device   → host & service certs → mTLS, APIs, 802.1X
          └── (optional) SPIRE signing intermediate
 ```
 
@@ -49,9 +49,16 @@ Workload certs are **not** Entra user CBA certs. Optional later: SPIRE JWT-SVID 
 
 ---
 
-## Device 802.1X (related, plane D)
+## Device certificates and 802.1X
 
-**Machine** EAP-TLS client certificates are **not** workload service identity and **not** user CBA certs. Prefer a **device** template (or carefully EKU-separated profile) under the same enterprise root/intermediate family so RADIUS and Intune/compliance stay aligned with one trust anchor story.
+The **device intermediate** (or a sibling template under the same enterprise root) also issues **machine client certificates** for **802.1X EAP-TLS**.
 
-- Issuance remains **attestor-gated** (see [thin-attestor.md](thin-attestor.md)).  
-- Full pattern: [device-8021x-eap-tls.md](device-8021x-eap-tls.md) and [../runbooks/device-8021x-eap-tls.md](../runbooks/device-8021x-eap-tls.md).
+| Consumer | Cert type | Plane |
+|----------|-----------|--------|
+| Compliance / attestor ticket | Device identity | D |
+| **802.1X machine EAP-TLS** | Device client cert (EKU Client Auth) | D |
+| Workload agents | Workload client cert | W |
+| User CBA | User cert (Future) | H |
+
+RADIUS trusts the **device** chain. Do not point 802.1X at user CBA certificates.  
+Full design: [device-8021x-eap-tls.md](device-8021x-eap-tls.md) · runbook: [../runbooks/device-8021x-eap-tls.md](../runbooks/device-8021x-eap-tls.md).
