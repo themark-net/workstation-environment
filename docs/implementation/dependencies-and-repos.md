@@ -1,21 +1,22 @@
 # Repositories & Dependencies
 
-| Logical name | Purpose | Status |
-|--------------|---------|--------|
-| **goldimage** | SSH, YubiKey admin, common baseline playbooks | Exists — consume by tag |
-| **sssd-hybrid / customized SSSD** | Hybrid UID/GID + OIDC | Done — out of scope for new work |
-| **workstation-environment** | Architecture, runbooks, Jira/GitLab import | This repo |
-| **ansible-workstation-environment** | ZT policy packs / roles | Expand |
-| **awx-config** | AWX CasC / job templates / inventories | Create |
-| **spire-infra** | SPIRE server/agent, policies | Create |
-| **trust-agent** | status.json generator | Create (or role inside ansible repo) |
+**Last updated:** 2026-08-07  
+**Canonical detail:** [../architecture/REPO-BOUNDARIES.md](../architecture/REPO-BOUNDARIES.md)
+
+| Logical name | Purpose | Status | Prod dependency on lab? |
+|--------------|---------|--------|-------------------------|
+| **goldimage** | SSH, YubiKey admin baselines | Exists | No |
+| **sssd-hybrid** | OIDC + hybrid UID/GID | Done | No |
+| **workstation-environment** | Architecture, imports, lab harness docs | This repo | N/A |
+| **ltz-client** (`client/`) | Host agent, Intune artifacts, Ansible | MVP build | **No** |
+| **ltz-attestor** (`services/attestor/`) | Thin attestor | MVP build | **No** |
+| **ltz-collector** (`services/collector/`) | Report sink / mock Intune | MVP build | **No** |
+| **ltz-lab** (`lab/`) | Proxmox + lab-only deploy | Lab only | N/A |
+| **zt-awx-config** | AWX CasC | Future | No |
+| **zt-spire-config** | SPIRE | Future | No |
 
 ## Versioning
 
-- goldimage: pin `vX.Y.Z` in AWX project.
-- SPIRE: pin release versions; upgrade via change window.
-- Docs: this repo `main` is source of truth for architecture.
-
-## GitLab ↔ Jira
-
-See [docs/project/README.md](../project/README.md).
+- Pin **ltz-client** / attestor / collector tags in lab and AWX.  
+- Never pin production automation to `lab/` paths.  
+- Docs: `main` on this repo is architecture source of truth.
