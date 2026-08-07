@@ -44,6 +44,8 @@ POST /v1/enroll  (lab; prod may be Intune-only for device object)
 
 Ticket is presented by the agent to **collector** and optionally used as TLS client cert material depending on deployment mode.
 
+**Network (802.1X):** The same successful attest can authorize minting/renewal of a **device client certificate** for EAP-TLS (machine auth). RADIUS trusts the device CA chain. User CBA certificates must not be used for 802.1X. See [device-8021x-eap-tls.md](device-8021x-eap-tls.md).
+
 ---
 
 ## 4. Code locations

@@ -21,9 +21,9 @@ Fund a **compliance-first** program on the **existing Microsoft control plane**:
 | Priority | Outcome |
 |----------|---------|
 | **MVP** | Thin attestor + agent → Intune custom compliance → CA **require compliant device** |
-| **Future** | Entra CBA / FIDO (no USB), AWX continuous policy, workload certs ± SPIRE |
+| **Future** | Entra CBA / FIDO (no USB), AWX continuous policy, workload certs ± SPIRE, **802.1X machine EAP-TLS** on device certs |
 
-Do **not** build a parallel Linux IdP or Autopilot clone.
+Do **not** build a parallel Linux IdP or Autopilot clone. Network auth reuses the **device** certificate path (not user CBA).
 
 ---
 
@@ -48,7 +48,8 @@ Do **not** build a parallel Linux IdP or Autopilot clone.
 - Pilot Linux hosts enroll in Intune and reach **Compliant** using attestor-backed custom compliance.  
 - Conditional Access grants/denies a pilot app on **compliant device** for those hosts.  
 - Fail-closed demo without valid attestation ticket.  
-- Client code deployable without lab infrastructure.
+- Client code deployable without lab infrastructure.  
+- Design supports **802.1X device EAP-TLS** on the same attestor-gated cert (lab optional; production with enterprise CA + RADIUS).
 
 ---
 
