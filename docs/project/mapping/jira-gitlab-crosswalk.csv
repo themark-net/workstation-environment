@@ -1,61 +1,9 @@
-BacklogKey,Type,Summary,Phase,EstimateHours,JiraKey,GitLabProject,GitLabIID,Notes
-LZT-E1,Epic,"P0 Foundations — AWX, repos, goldimage glue",P0,160,,lzt-program,,Fill JiraKey/IID after import
-LZT-E2,Epic,P1 Device trust — Intune + trust agent,P1,140,,lzt-program,,Fill JiraKey/IID after import
-LZT-E3,Epic,P2 Workload identity — MS CA certs + systemd harden,P2,160,,lzt-program,,Fill JiraKey/IID after import
-LZT-E4,Epic,P3 SPIRE platform,P3,160,,lzt-program,,Fill JiraKey/IID after import
-LZT-E5,Epic,P4 User TPM-CBA no-USB,P4,180,,lzt-program,,Fill JiraKey/IID after import
-LZT-E6,Epic,P5 Enforce CA + GA readiness,P5,80,,lzt-program,,Fill JiraKey/IID after import
-LZT-E7,Epic,"P6 Scale, ops handoff, docs",P6,48,,lzt-program,,Fill JiraKey/IID after import
-LZT-S01,Story,Deploy AWX OSS instance,P0,40,,lzt-program,,LZT-E1
-LZT-S02,Story,AWX configuration as code project,P0,24,,lzt-program,,LZT-E1
-LZT-S03,Story,Consume goldimage playbooks by version pin,P0,16,,lzt-program,,LZT-E1
-LZT-S04,Story,Pilot inventory and RBAC model,P0,16,,lzt-program,,LZT-E1
-LZT-S05,Story,Submit Entra/PKI request catalog week 1,P0,24,,lzt-program,,LZT-E1
-LZT-S06,Story,Import Jira and GitLab backlogs,P0,8,,lzt-program,,LZT-E1
-LZT-S07,Story,Optional AWX Entra SSO app registration,P0,16,,lzt-program,,LZT-E1
-LZT-S08,Story,Trust agent MVP (status.json + timer),P1,40,,lzt-program,,LZT-E2
-LZT-S09,Story,Intune Linux enrollment runbook + packages,P1,24,,lzt-program,,LZT-E2
-LZT-S10,Story,Custom compliance discovery + JSON rules,P1,32,,lzt-program,,LZT-E2
-LZT-S11,Story,Built-in compliance: distro + encryption,P1,16,,lzt-program,,LZT-E2
-LZT-S12,Story,policy_gen marker from AWX enforce jobs,P1,16,,lzt-program,,LZT-E2
-LZT-S13,Story,Workload Intermediate CA + templates delivered,P2,24,,lzt-program,,LZT-E3
-LZT-S14,Story,AWX role: service cert enroll + renew,P2,40,,lzt-program,,LZT-E3
-LZT-S15,Story,Systemd unit hardening pack for agents,P2,24,,lzt-program,,LZT-E3
-LZT-S16,Story,Migrate pilot agents off static tokens,P2,32,,lzt-program,,LZT-E3
-LZT-S17,Story,Compliance fields for workload cert health,P2,16,,lzt-program,,LZT-E3
-LZT-S18,Story,SPIRE trust domain + server HA design,P3,24,,lzt-program,,LZT-E4
-LZT-S19,Story,Deploy SPIRE server HA,P3,40,,lzt-program,,LZT-E4
-LZT-S20,Story,UpstreamAuthority to MS CA Workload Intermediate,P3,24,,lzt-program,,LZT-E4
-LZT-S21,Story,SPIRE agent via AWX + registration policies,P3,32,,lzt-program,,LZT-E4
-LZT-S22,Story,Platform mTLS pilot between two services,P3,24,,lzt-program,,LZT-E4
-LZT-S23,Story,Document SPIRE non-goals for desktops,P3,8,,lzt-program,,LZT-E4
-LZT-S24,Story,Entra CBA + CA trust enablement for pilot group,P4,24,,lzt-program,,LZT-E5
-LZT-S25,Story,User cert template for TPM PKCS#11 enrollment,P4,16,,lzt-program,,LZT-E5
-LZT-S26,Story,Spike: TPM keygen CSR broker Edge CBA,P4,32,,lzt-program,,LZT-E5
-LZT-S27,Story,AWX role auth_tpm_cba packages + helpers,P4,32,,lzt-program,,LZT-E5
-LZT-S28,Story,Pilot enrollment for 10-20 users,P4,40,,lzt-program,,LZT-E5
-LZT-S29,Story,CA report-only policy including Linux pilot,P4,16,,lzt-program,,LZT-E5
-LZT-S30,Story,Switch CA from report-only to on for pilot apps,P5,24,,lzt-program,,LZT-E6
-LZT-S31,Story,"Fail-closed validation (drift, stale agent, revoked cert)",P5,24,,lzt-program,,LZT-E6
-LZT-S32,Story,Architect acceptance review,P5,16,,lzt-program,,LZT-E6
-LZT-S33,Story,Security test report,P5,16,,lzt-program,,LZT-E6
-LZT-S34,Story,Ops runbooks signed (on-call),P6,16,,lzt-program,,LZT-E7
-LZT-S35,Story,Wave-1 expansion plan,P6,16,,lzt-program,,LZT-E7
-LZT-S36,Story,Program retrospective + metrics dashboard,P6,16,,lzt-program,,LZT-E7
-LZT-T01,Task,Choose AWX deploy target (K8s/VM) and size,,4,,lzt-program,,LZT-S01
-LZT-T02,Task,TLS cert + DNS for AWX UI,,4,,lzt-program,,LZT-S01
-LZT-T03,Task,Backup/restore dry run,,4,,lzt-program,,LZT-S01
-LZT-T04,Task,Document goldimage tag pin in awx-config,,2,,lzt-program,,LZT-S03
-LZT-T05,Task,Open REQ-PKI-01/02 tickets,,4,,lzt-program,,LZT-S05
-LZT-T06,Task,Open REQ-ENTRA-03/04/05/06 tickets,,4,,lzt-program,,LZT-S05
-LZT-T07,Task,Define status.json JSON schema v1 in repo,,4,,lzt-program,,LZT-S08
-LZT-T08,Task,"Implement probes: LUKS, TPM present, services",,12,,lzt-program,,LZT-S08
-LZT-T09,Task,Write discovery script + compliance JSON,,12,,lzt-program,,LZT-S10
-LZT-T10,Task,PoC CSR to PKI API/SCEP from one host,,8,,lzt-program,,LZT-S14
-LZT-T11,Task,Inventory existing semi-privileged units on gold image,,8,,lzt-program,,LZT-S15
-LZT-T12,Task,SPIRE server compose/helm in spire-infra,,16,,lzt-program,,LZT-S19
-LZT-T13,Task,Registration entries for trust-agent unit,,8,,lzt-program,,LZT-S21
-LZT-T14,Task,Lab notes: tpm2-pkcs11 + Edge cert picker,,12,,lzt-program,,LZT-S26
-LZT-T15,Task,Pilot user comms + PIN SOP,,8,,lzt-program,,LZT-S28
-LZT-T16,Task,Break-glass account test before enforce,,4,,lzt-program,,LZT-S30
-LZT-T17,Task,Scripted compliance failure drills,,8,,lzt-program,,LZT-S31
+jira_id,gitlab_title,phase,req
+LTZ-M0,[LTZ-M0] Foundations / lab MVP,M0,
+LTZ-M1,[LTZ-M1] Device trust MVP,M1,
+LTZ-M2,[LTZ-M2] Tenant plug-in,M2,REQ-M*
+LTZ-F1,[LTZ-F1] CBA Future,F1,REQ-F*
+LTZ-S010,[LTZ-M1] Thin attestor,M1,
+LTZ-S012,[LTZ-M1] Client trust agent,M1,
+LTZ-S013,[LTZ-M1] Intune artifacts,M1,REQ-M04
+LTZ-S020,[LTZ-M2] REQ-M* tenant plug-in,M2,REQ-M01-M07
