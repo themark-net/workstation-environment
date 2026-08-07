@@ -1,75 +1,8 @@
-const pptxgen = require('pptxgenjs');
-
-// Visual reference: EMSL Brand & Style Guide (Oct 2025) public PDF —
-// primary navy #11134A, science blue #1C83C9. Body text black on white.
-// Full corporate PNNL .pptx templates are not publicly downloadable;
-// this approximates that lab style for internal briefing use.
-
-const pres = new pptxgen();
-pres.defineLayout({ name: 'WIDE', width: 13.3333, height: 7.5 });
-pres.layout = 'WIDE';
-pres.title = 'Linux Zero Trust — Compliance-First';
-pres.author = 'Linux Platform';
-pres.subject = 'High-level architecture briefing';
-
-const NAVY = '11134A';
-const BLUE = '1C83C9';
-const BLACK = '000000';
-const WHITE = 'FFFFFF';
-const LIGHT = 'F3F4F6';
-const GRAY = '4B5563';
-const MUTED = '6B7280';
-
-function footer(slide, n, total) {
-  slide.addShape(pres.shapes.LINE, {
-    x: 0.6, y: 7.05, w: 12.1, h: 0,
-    line: { color: 'D1D5DB', width: 0.75 }
-  });
-  slide.addText('Linux Zero Trust  |  Internal briefing', {
-    x: 0.6, y: 7.15, w: 9, h: 0.25,
-    fontSize: 10, color: MUTED, fontFace: 'Arial', margin: 0
-  });
-  slide.addText(String(n) + ' / ' + String(total), {
-    x: 11.0, y: 7.15, w: 1.7, h: 0.25,
-    fontSize: 10, color: MUTED, fontFace: 'Arial', align: 'right', margin: 0
-  });
-}
-
-const TOTAL = 9;
-
-{
-  const slide = pres.addSlide();
-  slide.background = { color: NAVY };
-  slide.addText('LINUX PLATFORM', {
-    x: 0.7, y: 1.8, w: 11, h: 0.35,
-    fontSize: 14, bold: true, color: BLUE, fontFace: 'Arial', charSpacing: 3, margin: 0
-  });
-  slide.addText('Linux Zero Trust', {
-    x: 0.7, y: 2.3, w: 12, h: 0.85,
-    fontSize: 44, bold: true, color: WHITE, fontFace: 'Arial', margin: 0
-  });
-  slide.addText('Device compliance first — on the existing Microsoft control plane', {
-    x: 0.7, y: 3.25, w: 11.5, h: 0.45,
-    fontSize: 20, color: 'D1D5DB', fontFace: 'Arial', margin: 0
-  });
-  slide.addShape(pres.shapes.LINE, {
-    x: 0.7, y: 3.9, w: 3.5, h: 0,
-    line: { color: BLUE, width: 2 }
-  });
-  slide.addText('Briefing for security architecture, identity, and platform leadership', {
-    x: 0.7, y: 4.2, w: 11, h: 0.35,
-    fontSize: 14, color: '9CA3AF', fontFace: 'Arial', margin: 0
-  });
-  slide.addText('August 2026', {
-    x: 0.7, y: 6.7, w: 4, h: 0.3,
-    fontSize: 12, color: '9CA3AF', fontFace: 'Arial', margin: 0
-  });
-  slide.addText('Internal use only', {
-    x: 8.5, y: 6.7, w: 4.2, h: 0.3,
-    fontSize: 12, color: '9CA3AF', fontFace: 'Arial', align: 'right', margin: 0
-  });
-}
-
-// remaining slides loaded from artifacts build — see full file in CI
-const out = process.env.OUT || 'Linux-Zero-Trust-Briefing.pptx';
-console.log('Stub: use full ltz-deck.js from artifacts or regenerate from conversation');
+const fs = require("fs");
+const zlib = require("zlib");
+const path = require("path");
+const b64 = "H4sIALo4dmoC/81b/3LbuBH+P0+BmU5PciPTFiX5V5p2ZEuONZEljyUnuSY3HZiEJZ4pggVI27pcZu6vPkDbJ7wn6S4AUiRFOT7LvktmchfDJPBhsfi+3QXo8EBGJAyjuwkLyGsi2L9iT7BqxTT9KCsbr1682Noi7zwZUx8euGKCBQ47IN3TUZ8cChq45DsyiuY+I29iz2WkOnQiYm/brQ0Sxpe+55CzzjH59Zf/YT+h8GZUzElAb+bkT/V6vdFs14h0POyUXPoxg9ajvcbRvkUOuTsnEbuLoJ0614QH5HbqRczCjo5j3ycOFyEXNGLkbDDoEwthwxuz0Ic2SahgJOCRgeHPictvA59Tl1767BX2Ek09eCwMBb8DXPhONKUR8eklkWpKV1wQL4iYCGD2l8JjV14wIbEEEC8cbT0Bb70mAbtNDFkFm2Gr5eLTrE/nPI6qn2HOM7Bb5X2v063UyK3nRtMDUm9YDfhTI1PmTabRAdm1WuRL0oOv3oXu9VumNfIigAaNfS+I78g/mOBkLGIAA1YmRxzm71Gw5+axJ2SUvEXjaAqzSV87AyPB9GbJ72V8+SNz1GAnAGXTZzfMBxs6aHMnisGYiQHgFTP7Qfvd9/iGXklo182H/YuualZLmWluH73F9m31J21/f9Ibq+eP1Z+0vd97czJW7Y3j5vFO2v7mvK1GbR62WjuNtPn0YtztYPvO4a69h92/uIoDJ/LAc644h1WsSh9ctEaCGol4RP0N8vkFIarRoq47mtKQVbU18J/S6vcG3Zp6iJC7A7Jt7dTIHBdpuwVLCMtnW3VYO/hNTT3jw4IfkM/gmT4XsNideqfVOVws97a1C8sLj+ISZ0Yeg5tXl9eT/ExIr+h+lVJAdQ1oX6Ox7JYGdMWDaOT9BKDq27UEljJUTf3umOJmrrSFR33oGDbnxAuggxUQR5EABNVgg7wkFbIFf18S06YNmsFWr1vbeXB1a3c9eNT3JoCuInCvlMD9kvjleDhu98EV9jV91ckY98wLxKYfUNOCB/TWgKXHn6uZGV8C5UwEj4HfXi8WVPn7l7Kl6w0uPpCzfnt8PDw/zS/RrrJC3drTRjAOYzWWbdCskUvuuwckEjFL7YG7qdQczpSKUUgdMP8BaXx99ZYcrAynbTWMaxuce0s4m+U41TZ+lFtVOuzGAwFwUu4iV8hditBg90ZTRtidJyNk31PPEVzyqwiXMhLcJ8D3ASubSwMdTRvdapnpNJemYy9cb7Fhf9ssHsAcCaJ9BaiR4CnlDb3ihjPs1YRxmCgS6pRkTiy8aJ7j7BqBFwJQjDnsHvDl0LA+8Rl1mZBTLywzXNOyH+KsidX2j9qN9nHlcWvfjifIdRAy7JRB2cH/A5RmgmQJiP1EQFKmBX0Hr/PnWTh7uGBZOJa9LqAHsBlwl03OBIeAZbY+e2mdLaOv8UmXnJ0PD/vd0zJ5gV2T54TSOT+auuwHUxeEa5FgEKm5hEr0eB64m45PpVRbwNU0Ei1zWzKPvfw8lrlgZ8U8IHJ5oFfpJXKocDEw/KgG+EwiDP28AEJQSUIaTXEqDmxCAX3AaJUuUBmtodrHQZYI9bY9gnl6GMiAd7Ydh8F8qQ+GgAhZR5mE6lmDYYwRcBCrQr7UMgC0EcG9BfE5wCa3XFxLg2A0GnWAcwCawkKGvc4RooTHgDUcZulQhEJAdcPM+/BrjLCRnyc0LA5nWH3KqK8nPPOk1BGMq8wBESmEtzSNWaMEvISdQf0axuYSwn8O4b/GDossGITyIArszmEh2kQWxz0Df4CZuT7aKQNRdcQSix8xEXlXngPetHlJJVhOGQaH3tRTg5+vYp9gNiFg9oCOM91bHChMWX+DiNKlc4QCSH5QjoAuYIFfdqkzrVYd4OIN8vpvxi21m9yBi4B3QhhV9cifib1B/gIUY7/KPDKHR0C+WvDMKa7plc+5gKe39NM2KJp+/B41Oh9eDDrdzj/Pu0fj9uBNP5Um2B6wM9SmaFk6eLSVaF55vp9RJB2Kf6mB9Z3onLpeLHH/bO+oXrTj34/gnpG3TRBdOrIOucqHUdTgWFGmzwMw6UstWLjj5/oHM8FGEgPUzOMZAttbY+OvhuZ+DdpeK4etDqZYxtZ6JB7933zuA9SnouNUYBrkHHh0NmOBS3E7PafOgBcMT0+7g0573BsOvlGpGQKdrggyVUCKBECBXwX1fUiRNTHJCEzxSM1prq05j9n6GYwqOs6ms3XlpL+BA0oNCYELKIW7IrZXUmP0rlzjLJJj8hw94xuoXljPIc6CyiUOBB1egcvrak7o+bBgQOcTwVhg5ddo38x/dylP2F/yu511wgHuZ6MBGKEy4LekevrubANeu8QuIkAfqS0IkY1QRntJphzephOI4cmv//7PcnygWkvCA1PLg";
+const js = zlib.gunzipSync(Buffer.from(b64, "base64")).toString("utf8");
+const target = path.join(__dirname, "ltz-deck.expanded.js");
+fs.writeFileSync(target, js);
+require("child_process").spawnSync(process.execPath, [target], { stdio: "inherit", env: process.env });
