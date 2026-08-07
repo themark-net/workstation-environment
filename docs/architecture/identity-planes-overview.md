@@ -1,71 +1,60 @@
 # Architecture: Identity & Trust Planes (Unified View)
 
-**Status:** Approved design direction  
-**Last updated:** 2026-08-05  
+**Status:** Canonical — compliance-first MVP  
+**Last updated:** 2026-08-07  
+
 **Assumptions:**
-- User-facing **SSSD OIDC** is **done** (custom hybrid SSSD: UID/GID with AD hybrid accounts).
-- **Goldimage** Ansible playbooks exist for SSH + YubiKey Linux **admin** accounts.
-- **Limited Entra/Intune access** for implementers; changes require formal Microsoft-termed access requests (see [entra-access-requests.md](../implementation/entra-access-requests.md)).
-- New **AWX (OSS Tower)** instance and **SPIRE** infrastructure are in scope.
-- Non-user workloads use **MS CA workload intermediate** certs; humans use **TPM-backed Entra CBA** (no USB).
+
+- User-facing **SSSD OIDC** is **done**.  
+- **Goldimage** Ansible playbooks exist for SSH + YubiKey admin.  
+- **Limited Entra/Intune access**; tenant changes require formal REQ catalog.  
+- **Urgency:** device **compliance** over passwordless user UX.  
+- **CBA** is Future-state Hello-class user hook — **not** Intune attestation.
+
+See [MVP-AND-FUTURE-STATE.md](MVP-AND-FUTURE-STATE.md) and [REPO-BOUNDARIES.md](REPO-BOUNDARIES.md).
 
 ---
 
 ## Planes
 
 ```text
-PLANE H — HUMAN (user) ……………………… DONE / extend
-  SSSD OIDC (hybrid UID/GID) · optional local session
-  Entra CBA via platform TPM PKCS#11 (no USB) — TO BUILD
-  YubiKey: break-glass / admin path (goldimage) — EXISTS
+PLANE H — HUMAN (user)
+  MVP:  SSSD OIDC → Entra (DONE)
+  Future: Entra CBA via platform TPM PKCS#11 (no USB)
+  Admin: YubiKey path (goldimage) — EXISTS
 
-PLANE D — DEVICE (laptop/workstation)
-  Golden image · LUKS · Intune enroll · custom compliance
-  Trust agent → status.json → Intune → Conditional Access
+PLANE D — DEVICE (laptop/workstation)     ★ MVP CRITICAL PATH
+  Enroll (Intune in prod; lab birth record)
+  Thin attestor → short-lived device ticket/cert
+  Compliance agent → collector / Intune custom compliance artifacts
+  Conditional Access: require compliant device
 
-PLANE W — WORKLOAD (non-human on clients & platform)
-  MS CA Workload Intermediate → service/host client certs
-  Optional SPIRE SVIDs for high-churn / attested services
-  Unprivileged systemd units (not secret-bearing root accounts)
+PLANE W — WORKLOAD (non-human)            Future / selective
+  MS CA Workload Intermediate; optional SPIRE under MS CA
 
 PLANE M — MANAGEMENT
-  Goldimage repo: SSH, YubiKey admin, common baseline
-  New AWX: continuous policy (GPO parity) + cert lifecycle
-  SPIRE server(s) + agents where workload plane needs them
-  GitLab: IaC / playbooks / SPIRE config
-  Jira: delivery tracking (import packs in docs/project/)
+  MVP: Ansible roles from ltz-client (prod-shaped)
+  Future: AWX continuous policy (GPO parity)
 ```
 
 ---
 
-## Repo map
+## What is / is not Intune attestation
 
-| Repo (logical name) | Role |
-|---------------------|------|
-| **goldimage** | Baseline SSH, YubiKey admin, common host harden — already gold |
-| **sssd-hybrid** (custom) | Hybrid identity UID/GID + OIDC — **done** |
-| **workstation-environment** (this) | Architecture, runbooks, project import packs |
-| **ansible-workstation-environment** | Expanded policy packs / roles for ZT fleet |
-| **awx-config** (new or folder) | AWX job templates, inventories, credentials as code |
-| **spire-infra** (new) | SPIRE server/agent manifests, registration policies |
-| **trust-agent** (new or role) | status.json agent + systemd timer |
+| Component | Role |
+|-----------|------|
+| Thin attestor + compliance agent | **Device posture verification** (MVP) |
+| Intune custom compliance | **Maps** verified posture → Compliant bit |
+| Entra CBA | **User** cert auth to Entra (Future) |
+| SSSD OIDC | **User** session identity on Linux (Done) |
 
 ---
 
-## Trust decisions (non-negotiable)
+## Trust decisions
 
-1. **No USB** for day-to-day Entra passwordless (TPM CBA).
-2. **No parallel IdP** for corporate user access.
-3. **Separate CA intermediates:** User/CBA vs Workload.
-4. **Unix accounts ≠ network identity** — keep minimal systemd users; certs/SVIDs for off-box trust.
-5. **Stale management = non-compliant** (AWX policy_gen + agent freshness → Intune).
-6. SPIRE is **workload plane**, not a substitute for Entra CBA/Intune on desktops.
-
----
-
-## Related docs
-
-- [SPIFFE/SPIRE](spiffe-spire.md)
-- [Workload certs MS CA](workload-certs-ms-ca.md)
-- [Implementation plan](../implementation/IMPLEMENTATION-PLAN.md)
-- [Executive proposal](../executive/EXECUTIVE-PROPOSAL.md)
+1. **MVP success** = compliant device path with attestor-backed claims — not CBA.  
+2. **No parallel IdP** for corporate user access.  
+3. **SSSD OIDC does not equal device trust.**  
+4. **Custom compliance is necessary but not sufficient** without attestor-backed evidence.  
+5. **Client code must run without lab/** dependencies.  
+6. SPIRE/CBA/MAA are **Future** upgrades to the same chain shape.  
