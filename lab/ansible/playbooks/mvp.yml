@@ -1,11 +1,17 @@
 ---
-# Lab automation: MVP device-trust path only (no CBA, no SPIRE).
+# Lab automation: MVP device-trust path + machine 802.1X (no CBA, no SPIRE).
 
 - name: Deploy attestor on lab_rp
   hosts: lab_rp
   become: true
   roles:
     - lab_attestor
+
+- name: Deploy FreeRADIUS (device 802.1X) on lab_rp
+  hosts: lab_rp
+  become: true
+  roles:
+    - lab_radius
 
 - name: Deploy collector on lab_rp
   hosts: lab_rp
@@ -57,6 +63,8 @@
     ltz_attestor_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443"
     ltz_collector_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8089"
     ltz_join_token: lab-join
+    ltz_8021x_enabled: true
+    ltz_8021x_interface: "{{ ltz_8021x_interface | default('eth0') }}"
   pre_tasks:
     - name: Enroll device
       ansible.builtin.include_role:
@@ -66,3 +74,7 @@
       vars:
         ltz_attestor_url: "{{ ltz_attestor_url }}"
         ltz_collector_url: "{{ ltz_collector_url }}"
+    - role: ltz_8021x
+      vars:
+        ltz_8021x_enabled: true
+        ltz_8021x_identity: "{{ inventory_hostname }}"

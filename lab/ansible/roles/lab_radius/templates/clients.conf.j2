@@ -1,0 +1,20 @@
+client localhost {
+    ipaddr = 127.0.0.1
+    secret = {{ ltz_radius_clients_secret }}
+    require_message_authenticator = no
+    nas_type = other
+}
+
+client lab_net {
+    ipaddr = 10.0.0.0/8
+    secret = {{ ltz_radius_clients_secret }}
+    require_message_authenticator = no
+    nas_type = other
+}
+
+client lab_net_192 {
+    ipaddr = 192.168.0.0/16
+    secret = {{ ltz_radius_clients_secret }}
+    require_message_authenticator = no
+    nas_type = other
+}

@@ -8,7 +8,7 @@
 
 ## 1. Problem
 
-Windows is accepted as managed because **Entra + Intune compliance + Conditional Access** form a clear device-trust path. Linux already has **SSSD OIDC → Entra** for user login, but **device health is not a first-class CA signal**. Sensitive access either blocks Linux or relies on exceptions.
+Windows is accepted as managed because **Entra + Intune compliance + Conditional Access** form a clear device-trust path. Linux already has **SSSD OIDC → Entra** for user login, but **device health is not a first-class CA signal**. Sensitive access either blocks Linux or relies on exceptions. Corporate network access for Linux is similarly incomplete without **machine 802.1X**.
 
 Passwordless “Hello-class” UX (Entra CBA) is desirable later; it is **not** what unblocks compliant-device decisions today.
 
@@ -16,12 +16,12 @@ Passwordless “Hello-class” UX (Entra CBA) is desirable later; it is **not** 
 
 ## 2. Recommendation
 
-Fund a **compliance-first** program on the **existing Microsoft control plane**:
+Fund a **compliance-first** program on the **existing Microsoft control plane**, with **device network auth in the same MVP**:
 
 | Priority | Outcome |
 |----------|---------|
-| **MVP** | Thin attestor + agent → Intune custom compliance → CA **require compliant device** |
-| **Future** | Entra CBA / FIDO (no USB), AWX continuous policy, workload certs ± SPIRE, **802.1X machine EAP-TLS** on device certs |
+| **MVP** | Thin attestor + agent → Intune custom compliance → CA **require compliant device**; **802.1X machine EAP-TLS** on the same attestor-gated device cert (lab FreeRADIUS + production-shaped client) |
+| **Future** | Entra CBA / FIDO (no USB), AWX continuous policy, workload certs ± SPIRE, enterprise-wide 802.1X scale-out |
 
 Do **not** build a parallel Linux IdP or Autopilot clone. Network auth reuses the **device** certificate path (not user CBA).
 
@@ -37,9 +37,10 @@ Do **not** build a parallel Linux IdP or Autopilot clone. Network auth reuses th
 
 ## 4. Ask
 
-1. Approve **MVP** engineering (attestor, agent, lab evidence, Intune artifacts).  
+1. Approve **MVP** engineering (attestor, agent, lab evidence, Intune artifacts, **802.1X client + lab RADIUS**).  
 2. Prioritize **REQ-M*** IAM tickets (Intune enroll, custom compliance, CA compliant device).  
-3. Defer **REQ-F*** (CBA) until MVP pilot is green unless org-wide phishing-resistant MFA already mandates it.
+3. Engage **network** for pilot RADIUS trust of the device intermediate (M2).  
+4. Defer **REQ-F*** (CBA) until MVP pilot is green unless org-wide phishing-resistant MFA already mandates it.
 
 ---
 
@@ -49,7 +50,8 @@ Do **not** build a parallel Linux IdP or Autopilot clone. Network auth reuses th
 - Conditional Access grants/denies a pilot app on **compliant device** for those hosts.  
 - Fail-closed demo without valid attestation ticket.  
 - Client code deployable without lab infrastructure.  
-- Design supports **802.1X device EAP-TLS** on the same attestor-gated cert (lab optional; production with enterprise CA + RADIUS).
+- **Lab proves machine 802.1X EAP-TLS** (accept valid device cert; reject missing/expired).  
+- Production-shaped **802.1X Ansible role** ready for pilot RADIUS.
 
 ---
 

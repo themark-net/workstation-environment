@@ -2,6 +2,7 @@
 
 **Plane:** Device (D)  
 **Auth method:** EAP-TLS with **device** client certificate  
+**MVP status:** Required for lab MVP green path; production-shaped client role ships with agent  
 **Prerequisite architecture:** [../architecture/device-8021x-eap-tls.md](../architecture/device-8021x-eap-tls.md)
 
 ---
@@ -12,21 +13,30 @@ Network access is gated by the **same attestor-backed device identity** used for
 
 ---
 
-## 2. Lab path (optional M1+)
+## 2. Lab path (MVP — required)
 
-1. Lab CA (or step-ca) issues device client certs after successful `/v1/attest`.  
-2. Deploy FreeRADIUS (or existing lab RADIUS) with trust for lab device CA.  
-3. Client: NetworkManager or `wpa_supplicant` profile using cert + key from attestor enrollment path (PKCS#11 or file in lab soft mode).  
-4. Validate: no cert → reject; valid cert → accept; expired after non-renew → reject.
+1. Thin attestor issues short-lived **device client certs** after successful `/v1/attest` (device CA enabled).  
+2. FreeRADIUS on `lab_rp` trusts the lab device CA (`lab_radius` role).  
+3. Client: `ltz_8021x` + agent install cert under `/var/lib/ltz-trust/device.*`; NetworkManager/`wpa_supplicant` EAP-TLS profile.  
+4. Validate (also covered by `make validate`):  
+   - no cert → RADIUS reject  
+   - valid cert → accept  
+   - expired after non-renew → reject  
+
+Deploy via:
+
+```bash
+cd lab && make ansible-mvp && make validate
+```
 
 ---
 
-## 3. Production path
+## 3. Production path (MVP pilot readiness)
 
 1. **PKI:** Device certificate template under enterprise intermediate (sibling of workload intermediate; distinct from user CBA template).  
 2. **Issuance:** Attestor success (or CA API called only after attestor success) mints/renews cert; private key in TPM via PKCS#11 where hardware allows.  
 3. **RADIUS:** Trust enterprise chain; map device identity to full access VLAN; unknown/revoked → quarantine or deny.  
-4. **Client:** Ansible role configures wired/wireless 802.1X (EAP-TLS), cert paths, and renewal timer.  
+4. **Client:** Ansible role `ltz_8021x` configures wired/wireless 802.1X (EAP-TLS), cert paths, and renewal via trust agent timer.  
 5. **CRL/OCSP:** Ensure RADIUS can check revocation on short-lived certs (or rely on very short TTL).
 
 ---

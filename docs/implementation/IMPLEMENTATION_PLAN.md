@@ -1,6 +1,6 @@
 # Implementation Plan — Linux Zero Trust (Compliance-First)
 
-**Version:** 2.1  
+**Version:** 2.2  
 **Date:** 2026-08-07  
 **Canonical phasing:** [../architecture/MVP-AND-FUTURE-STATE.md](../architecture/MVP-AND-FUTURE-STATE.md)
 
@@ -16,7 +16,7 @@
 | Autopilot for Linux | **Out of scope** |
 | Entra CBA (Hello-class user) | **Future** — not MVP blocker |
 | SPIRE / workload MS CA | **Future** after MVP device trust |
-| **802.1X machine EAP-TLS** | Same device cert path; lab optional; production with device intermediate + RADIUS |
+| **802.1X machine EAP-TLS** | **MVP** — same device cert path; lab FreeRADIUS + client role required; prod RADIUS pilot in M2 |
 
 ---
 
@@ -28,14 +28,16 @@
 2. **Thin attestor** + compliance agent so posture is not “local script honesty only.”  
 3. Prewritten Intune discovery/rules; plug in when tenant allows.  
 4. Production client code (**ltz-client**) has **zero** dependency on lab.  
-5. Lab proves enroll → attest → ticket → report → fail-closed.
+5. Lab proves enroll → attest → ticket → report → fail-closed.  
+6. Lab proves **802.1X EAP-TLS** with attestor-gated device cert (accept / reject / expire).  
+7. Production-shaped **802.1X client role** ships with the agent.
 
 ### Future (after MVP)
 
-6. Entra **CBA** / FIDO for phishing-resistant **user** auth (no USB day-to-day).  
-7. AWX continuous policy (GPO-class).  
-8. Workload MS CA intermediate ± SPIRE.  
-9. **802.1X machine EAP-TLS** on attestor-gated device certs (lab optional; production with device intermediate + RADIUS).
+8. Entra **CBA** / FIDO for phishing-resistant **user** auth (no USB day-to-day).  
+9. AWX continuous policy (GPO-class).  
+10. Workload MS CA intermediate ± SPIRE.  
+11. Enterprise-wide 802.1X access-layer scale-out (ops) beyond pilot.
 
 ---
 
@@ -44,11 +46,11 @@
 | Phase | Name | Outcome | Calendar (rough) |
 |-------|------|---------|------------------|
 | **M0** | Foundations | Repos extracted/pinned; lab MVP runnable; RACI | 1–2 weeks |
-| **M1** | Device trust MVP | Attestor, agent, collector; Intune artifacts; optional lab RADIUS | 4–6 weeks |
-| **M2** | Tenant plug-in | REQ-M* granted; enroll pilot; CA compliant device report-only→on | Depends on IAM |
+| **M1** | Device trust MVP | Attestor, agent, collector; Intune artifacts; **device cert + FreeRADIUS + client 802.1X** | 4–6 weeks |
+| **M2** | Tenant plug-in | REQ-M* granted; enroll pilot; CA compliant device report-only→on; **pilot RADIUS trust** for device intermediate | Depends on IAM / network |
 | **F1** | User CBA / FIDO | REQ-F*; TPM PKCS#11 path | After M2 |
 | **F2** | Management depth | New AWX + goldimage assert + policy packs | Parallel/after M1 |
-| **F3** | Workload + device network PKI | MS CA intermediate ± SPIRE; **802.1X device EAP-TLS** | After M2 (or earlier if network requires) |
+| **F3** | Workload identity | MS CA intermediate ± SPIRE | After M2 |
 
 ---
 
@@ -56,7 +58,8 @@
 
 See prior sections: foundations, device trust MVP (no CBA), tenant plug-in REQ-M01–M10.
 
-**Exit M2:** Pilot Linux hosts show **Compliant**; pilot app CA grants/denies on that bit.
+**Exit M1:** Lab green path includes 802.1X accept/reject/expire evidence.  
+**Exit M2:** Pilot Linux hosts show **Compliant**; pilot app CA grants/denies on that bit; pilot network ports/SSID trust device certs where network team enables.
 
 ---
 
@@ -66,7 +69,9 @@ See prior sections: foundations, device trust MVP (no CBA), tenant plug-in REQ-M
 |-------|------|------|
 | **F1** | TPM CBA or FIDO; no USB daily UX | REQ-F01–F08 |
 | **F2** | AWX ZT packs, continuous enforce | — |
-| **F3** | Workload certs, optional SPIRE, federation; **device 802.1X EAP-TLS** | REQ-F10; network/RADIUS (not Entra) |
+| **F3** | Workload certs, optional SPIRE, federation | REQ-F10 |
+
+802.1X **client + lab + pilot readiness** live under **M1/M2**, not F3. Scale-out remains ops.
 
 Details: [tpm-cba-no-usb.md](../runbooks/tpm-cba-no-usb.md), [workload-certs-ms-ca.md](../runbooks/workload-certs-ms-ca.md), [spiffe-spire.md](../runbooks/spiffe-spire.md), [device-8021x-eap-tls.md](../runbooks/device-8021x-eap-tls.md).
 
@@ -86,6 +91,7 @@ See [dependencies-and-repos.md](dependencies-and-repos.md) and [../architecture/
 | Custom compliance forgeable | Attestor-backed tickets; short TTL |
 | Scope creep into CBA | Keep CBA in F1 only |
 | Lab code leaks into prod | Hard boundary: no `lab/` in AWX projects |
+| 802.1X depends on switch lab hardware | FreeRADIUS + eapol_test / file-mode validation without physical switch |
 
 ---
 
@@ -98,11 +104,18 @@ See [dependencies-and-repos.md](dependencies-and-repos.md) and [../architecture/
 
 ---
 
-## 10. Network access (802.1X)
+## 10. Network access (802.1X) — MVP
 
-Machine **EAP-TLS** uses the **same device client certificate** path as the thin attestor (plane D). Optional lab FreeRADIUS in M1; production aligns with F3 device/workload PKI + RADIUS trust.
+Machine **EAP-TLS** uses the **same device client certificate** path as the thin attestor (plane D).
+
+| Layer | MVP delivery |
+|-------|----------------|
+| Cert mint/renew | Attestor after posture pass |
+| Client config | `client/ansible/roles/ltz_8021x` |
+| Lab RADIUS | `lab/ansible/roles/lab_radius` via `make ansible-mvp` |
+| Prod RADIUS | Network team trusts device intermediate (M2 pilot) |
 
 - Architecture: [../architecture/device-8021x-eap-tls.md](../architecture/device-8021x-eap-tls.md)
 - Runbook: [../runbooks/device-8021x-eap-tls.md](../runbooks/device-8021x-eap-tls.md)
 
-Not an Entra REQ-M blocker for Intune Compliant bit.
+Not an Entra REQ-M blocker for Intune Compliant bit; still a **device-plane MVP exit criterion**.

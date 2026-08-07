@@ -1,15 +1,18 @@
 External ID,Issue Type,Summary,Phase,Est Hours,Epic
 LTZ-S001,Story,Lab MVP green path,M0,24,LTZ-M0
 LTZ-S002,Story,Extract/pin client and services,M0,16,LTZ-M0
-LTZ-S010,Story,Thin attestor service,M1,40,LTZ-M1
+LTZ-S010,Story,Thin attestor service + device cert,M1,48,LTZ-M1
 LTZ-S011,Story,Collector + mock Intune,M1,24,LTZ-M1
 LTZ-S012,Story,Client trust agent + Ansible,M1,40,LTZ-M1
 LTZ-S013,Story,Intune discovery + rules,M1,12,LTZ-M1
+LTZ-S014,Story,Device 802.1X client role,M1,24,LTZ-M1
+LTZ-S015,Story,Lab FreeRADIUS MVP,M1,24,LTZ-M1
 LTZ-S020,Story,REQ-M01–M04 support,M2,16,LTZ-M2
 LTZ-S021,Story,REQ-M05–M07 support,M2,16,LTZ-M2
 LTZ-S022,Story,Pilot Compliant validation,M2,24,LTZ-M2
+LTZ-S023,Story,Pilot RADIUS trust,M2,16,LTZ-M2
 LTZ-S030,Story,Future CBA (optional),F1,80,LTZ-F1
 LTZ-M0,Epic,Foundations / lab MVP,M0,40,LTZ-M0
-LTZ-M1,Epic,Device trust MVP,M1,116,LTZ-M1
-LTZ-M2,Epic,Tenant plug-in,M2,56,LTZ-M2
+LTZ-M1,Epic,Device trust MVP (incl 802.1X),M1,172,LTZ-M1
+LTZ-M2,Epic,Tenant plug-in + pilot RADIUS,M2,72,LTZ-M2
 LTZ-F1,Epic,Future CBA/FIDO,F1,80,LTZ-F1

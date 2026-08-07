@@ -1,0 +1,16 @@
+# Managed by ltz_8021x — machine EAP-TLS (device cert from attestor)
+ctrl_interface=/run/wpa_supplicant
+ctrl_interface_group=0
+update_config=0
+eapol_version=1
+ap_scan=0
+
+network={
+    key_mgmt=IEEE8021X
+    eap=TLS
+    identity="{{ ltz_8021x_identity }}"
+    ca_cert="{{ ltz_8021x_ca_path }}"
+    client_cert="{{ ltz_8021x_cert_path }}"
+    private_key="{{ ltz_8021x_key_path }}"
+    eapol_flags=0
+}

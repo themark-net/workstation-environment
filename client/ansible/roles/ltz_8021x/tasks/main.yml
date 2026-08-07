@@ -1,0 +1,79 @@
+---
+- name: Skip when 802.1X disabled
+  ansible.builtin.meta: end_role
+  when: not ltz_8021x_enabled | bool
+
+- name: Packages for 802.1X
+  ansible.builtin.package:
+    name:
+      - wpasupplicant
+      - openssl
+    state: present
+
+- name: Ensure state directory exists
+  ansible.builtin.file:
+    path: "{{ ltz_state_dir }}"
+    state: directory
+    mode: "0750"
+    owner: root
+    group: root
+
+- name: Ensure /usr/local/lib/ltz exists
+  ansible.builtin.file:
+    path: /usr/local/lib/ltz
+    state: directory
+    mode: "0755"
+
+- name: Install 802.1X reload helper
+  ansible.builtin.copy:
+    src: ltz-8021x-reload.sh
+    dest: /usr/local/lib/ltz/ltz-8021x-reload.sh
+    mode: "0755"
+
+- name: wpa_supplicant config for machine EAP-TLS
+  ansible.builtin.template:
+    src: wpa_supplicant-ltz.conf.j2
+    dest: /etc/wpa_supplicant/wpa_supplicant-ltz.conf
+    mode: "0600"
+  notify: Restart wpa_supplicant ltz
+
+- name: systemd drop-in unit for LTZ wpa_supplicant (wired interface)
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/wpa_supplicant@ltz.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ machine 802.1X EAP-TLS (wpa_supplicant)
+      After=network-pre.target
+      Before=network.target
+      Wants=network.target
+
+      [Service]
+      Type=simple
+      ExecStart=/sbin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant-ltz.conf -i {{ ltz_8021x_interface }} -D wired
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+  when: ltz_8021x_medium == 'wired'
+  notify: Restart wpa_supplicant ltz
+
+- name: Enable LTZ wpa_supplicant unit (starts when interface exists)
+  ansible.builtin.systemd:
+    name: wpa_supplicant@ltz
+    enabled: true
+    daemon_reload: true
+  when: ltz_8021x_medium == 'wired'
+  failed_when: false
+
+- name: Document 802.1X paths
+  ansible.builtin.copy:
+    dest: "{{ ltz_config_dir }}/8021x.env"
+    mode: "0640"
+    content: |
+      LTZ_8021X_INTERFACE={{ ltz_8021x_interface }}
+      LTZ_8021X_MEDIUM={{ ltz_8021x_medium }}
+      LTZ_8021X_IDENTITY={{ ltz_8021x_identity }}
+      LTZ_DEVICE_CERT={{ ltz_8021x_cert_path }}
+      LTZ_DEVICE_KEY={{ ltz_8021x_key_path }}
+      LTZ_DEVICE_CA={{ ltz_8021x_ca_path }}

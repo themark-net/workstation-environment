@@ -1,6 +1,6 @@
 # Thin Attestor (MVP Device Trust)
 
-**Status:** MVP critical component  
+**Status:** MVP critical component (ticket + optional device cert for 802.1X)  
 **Last updated:** 2026-08-07
 
 ---
@@ -35,7 +35,12 @@ Downstream compliance agent and relying parties **trust the attestor**, not raw 
 ```text
 POST /v1/attest
   body: { device_id, evidence, nonce }
-  → 200 { ticket, expires_at } | 403
+  → 200 { ticket, expires_at, device_cert? } | 403
+  device_cert (when ISSUE_DEVICE_CERT=1):
+    { certificate_pem, private_key_pem, ca_pem, expires_at }
+
+GET /v1/device_ca
+  → 200 { ca_pem }  # for RADIUS / clients when cert issuance enabled
 
 POST /v1/enroll  (lab; prod may be Intune-only for device object)
   body: { device_id, pubkey, join_token }
@@ -67,3 +72,7 @@ Ticket is presented by the agent to **collector** and optionally used as TLS cli
 | Optional soft evidence | Discrete TPM quotes; optional MAA |
 
 Client and service **config** change; **protocol** stays stable.
+
+## Device certificates (MVP 802.1X)
+
+When `LTZ_ATTESTOR_ISSUE_DEVICE_CERT=1`, successful `/v1/attest` also returns a short-lived **device client certificate** (Client Auth EKU) for machine EAP-TLS. See [device-8021x-eap-tls.md](device-8021x-eap-tls.md).

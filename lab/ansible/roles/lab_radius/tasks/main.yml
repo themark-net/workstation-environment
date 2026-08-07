@@ -1,0 +1,112 @@
+---
+- name: Install FreeRADIUS
+  ansible.builtin.apt:
+    name:
+      - freeradius
+      - freeradius-utils
+      - openssl
+    state: present
+    update_cache: true
+
+- name: Detect FreeRADIUS config root
+  ansible.builtin.shell: |
+    set -e
+    if [ -d /etc/freeradius/3.0 ]; then echo /etc/freeradius/3.0
+    elif [ -d /etc/freeradius ]; then echo /etc/freeradius
+    else echo /etc/freeradius/3.0
+    fi
+  args:
+    executable: /bin/bash
+  register: fr_root
+  changed_when: false
+
+- name: Set freeradius_conf fact
+  ansible.builtin.set_fact:
+    freeradius_conf: "{{ fr_root.stdout | trim }}"
+
+- name: Ensure cert directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0750"
+    owner: freerad
+    group: freerad
+  loop:
+    - "{{ freeradius_conf }}/certs"
+    - "{{ freeradius_conf }}/certs/ltz"
+  failed_when: false
+
+- name: Ensure cert directories (root-owned fallback)
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0750"
+  loop:
+    - "{{ freeradius_conf }}/certs"
+    - "{{ freeradius_conf }}/certs/ltz"
+
+- name: Wait for attestor device CA
+  ansible.builtin.wait_for:
+    path: "{{ ltz_attestor_device_ca_dir }}/ca.crt"
+    timeout: 120
+
+- name: Install device CA for RADIUS trust
+  ansible.builtin.copy:
+    src: "{{ ltz_attestor_device_ca_dir }}/ca.crt"
+    dest: "{{ freeradius_conf }}/certs/ltz/ca.pem"
+    remote_src: true
+    mode: "0644"
+
+- name: Generate RADIUS server cert (lab only)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    cd "{{ freeradius_conf }}/certs/ltz"
+    if [ ! -f server.key ]; then
+      openssl req -x509 -newkey rsa:2048 -nodes \
+        -keyout server.key -out server.crt -days 825 \
+        -subj "/CN=ltz-lab-radius/O=LTZ/OU=Lab"
+      chmod 640 server.key server.crt
+    fi
+    # publish into FreeRADIUS certs dir used by stock eap module
+    cp -f server.key "{{ freeradius_conf }}/certs/server.key"
+    cp -f server.crt "{{ freeradius_conf }}/certs/server.crt"
+    cp -f ca.pem "{{ freeradius_conf }}/certs/ca.pem"
+    chown freerad:freerad "{{ freeradius_conf }}/certs/server.key" \
+      "{{ freeradius_conf }}/certs/server.crt" \
+      "{{ freeradius_conf }}/certs/ca.pem" 2>/dev/null || true
+  args:
+    executable: /bin/bash
+
+- name: Deploy clients.conf
+  ansible.builtin.template:
+    src: clients.conf.j2
+    dest: "{{ freeradius_conf }}/clients.conf"
+    mode: "0640"
+  notify: Restart freeradius
+
+- name: Point eap ca_file at lab device CA
+  ansible.builtin.lineinfile:
+    path: "{{ freeradius_conf }}/mods-available/eap"
+    regexp: '^\s*ca_file\s*='
+    line: '		ca_file = ${cadir}/ca.pem'
+    backup: true
+  notify: Restart freeradius
+  failed_when: false
+
+- name: Enable and start FreeRADIUS
+  ansible.builtin.systemd:
+    name: freeradius
+    enabled: true
+    state: restarted
+    daemon_reload: true
+  register: fr_svc
+  failed_when: false
+
+- name: Fallback service name freeradius3
+  ansible.builtin.systemd:
+    name: freeradius3
+    enabled: true
+    state: restarted
+    daemon_reload: true
+  when: fr_svc is failed or (fr_svc.status is defined and fr_svc.status.ActiveState is defined and fr_svc.status.ActiveState != 'active')
+  failed_when: false

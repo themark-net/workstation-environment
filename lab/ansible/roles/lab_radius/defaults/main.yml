@@ -1,0 +1,4 @@
+---
+ltz_attestor_device_ca_dir: /var/lib/ltz-attestor/device-ca
+ltz_radius_clients_secret: lab-radius-secret
+ltz_radius_auth_port: 1812

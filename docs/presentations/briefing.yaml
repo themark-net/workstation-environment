@@ -36,12 +36,12 @@ slides:
     type: recommendation
     section: RECOMMENDATION
     title: One Microsoft control plane — not a parallel Linux stack
-    banner: Prove device compliance first with Intune and Conditional Access. Passwordless user sign-in and workload certificates come after that pilot is green.
+    banner: Prove device compliance first with Intune and Conditional Access, and prove machine 802.1X on the same device certificate. Passwordless user sign-in and workload certificates come after that pilot is green.
     columns:
       - title: Now (MVP)
-        body: Attestation service + host agent → Intune compliance → Conditional Access requires a compliant device
+        body: Attestation service + host agent → Intune compliance → Conditional Access; machine 802.1X EAP-TLS on the same device cert
       - title: Later
-        body: Certificate or passkey user sign-in, continuous Ansible policy, service certificates, optional network 802.1X
+        body: Certificate or passkey user sign-in, continuous Ansible policy, service certificates, enterprise-wide 802.1X scale-out
       - title: Not in scope
         body: Linux Autopilot, a separate Linux identity provider, or treating user certificates as device compliance
   - id: trust-model
@@ -61,6 +61,7 @@ slides:
         body: |
           Attest → Intune
           Compliant device
+          + 802.1X cert
         highlight: true
       - number: "3"
         title: Workload
@@ -70,10 +71,11 @@ slides:
           Optional SPIRE
       - number: "4"
         title: Network
-        status: LATER
+        status: MVP
         body: |
           802.1X machine cert
           Same device PKI
+        highlight: true
   - id: chain
     type: steps
     section: DEVICE TRUST CHAIN
@@ -97,6 +99,9 @@ slides:
       - number: "6"
         title: Access
         body: Conditional Access uses Compliant
+      - number: "7"
+        title: Network
+        body: 802.1X EAP-TLS with device cert
   - id: not-building
     type: reject_list
     section: WHAT WE ARE NOT BUILDING
@@ -126,7 +131,7 @@ slides:
         early: true
       - number: "2"
         title: Device trust build
-        detail: Attestor, agent, Intune scripts
+        detail: Attestor, agent, Intune scripts, 802.1X
         timing: 4–6 weeks
         early: true
       - number: "3"
@@ -145,8 +150,8 @@ slides:
         timing: Parallel
         early: false
       - number: "6"
-        title: Service & network certs
-        detail: Workload PKI, 802.1X machine auth
+        title: Service certs
+        detail: Workload PKI ± SPIRE
         timing: After pilot
         early: false
   - id: iam-asks
@@ -174,4 +179,5 @@ slides:
       Conditional Access grants or denies on that signal.
       Access fails closed without a valid device credential.
       Host software deploys without lab-only dependencies.
+      Lab proves machine 802.1X accept/reject/expire on the same cert.
     note: Architecture and lab live in the workstation-environment repository.

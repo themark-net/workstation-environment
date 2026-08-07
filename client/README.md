@@ -1,6 +1,6 @@
 # ltz-client (production client reference tree)
 
-**Standalone production-shaped host components for LTZ MVP device trust.**  
+**Standalone production-shaped host components for LTZ MVP device trust + machine 802.1X.**  
 **No dependency on `lab/`.** Configure endpoints via Ansible vars or environment.
 
 When ready for production testing, extract this directory to its own Git repository (`ltz-client`).
@@ -11,10 +11,11 @@ When ready for production testing, extract this directory to its own Git reposit
 
 | Path | Purpose |
 |------|---------|
-| `agent/` | Trust/compliance agent (status + attest orchestration) |
+| `agent/` | Trust/compliance agent (status + attest + device cert renew) |
 | `attestor-client/` | Calls remote thin attestor |
 | `intune/` | Discovery script + rules JSON (upload to Intune) |
-| `ansible/` | Roles to install agent on a real workstation |
+| `ansible/roles/ltz_trust_agent` | Install agent on a real workstation |
+| `ansible/roles/ltz_8021x` | Machine EAP-TLS (`wpa_supplicant` / NetworkManager) |
 
 ---
 
@@ -26,7 +27,7 @@ ansible-playbook -i inventory.ini ansible/playbooks/site.yml \
   -e collector_url=https://collector.example.com
 ```
 
-Inventory is **your** hosts file — not lab inventory.
+Inventory is **your** hosts file — not lab inventory. Site playbook installs the trust agent and the 802.1X role.
 
 ---
 
@@ -36,12 +37,15 @@ Inventory is **your** hosts file — not lab inventory.
 systemd timer → ltz-trust-agent
   → gather local health
   → attestor-client: POST /v1/attest
-  → store ticket under /var/lib/ltz-trust/
+  → store ticket + device cert under /var/lib/ltz-trust/
   → POST status to collector (with ticket)
   → write status.json for Intune discovery script
+  → wpa_supplicant / NM uses device cert for machine 802.1X
 ```
 
 Intune discovery script **only passes** if a **non-expired ticket** is present (and optional claims). It does not invent posture without attestor success.
+
+Without renew after attest failure, the **device cert expires** and RADIUS rejects — network fail-closed.
 
 ---
 
@@ -58,4 +62,4 @@ No code change required if paths match role defaults.
 
 ## Architecture
 
-See design repo: `docs/architecture/MVP-AND-FUTURE-STATE.md`, `REPO-BOUNDARIES.md`.
+See design repo: `docs/architecture/MVP-AND-FUTURE-STATE.md`, `device-8021x-eap-tls.md`, `REPO-BOUNDARIES.md`.
