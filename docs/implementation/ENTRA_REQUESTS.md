@@ -1,91 +1,102 @@
 # Entra / Microsoft Identity Request Catalog
 
-**Purpose:** Limited Entra-side access means **every** tenant change is a formal request using Microsoft product terms. Use this catalog when filing tickets to IAM / Cloud Identity.
+**Purpose:** Formal Microsoft-termed tickets for IAM / Cloud Identity.  
+**Last updated:** 2026-08-07  
+**Phasing:** **MVP** (device compliance) vs **Future** (CBA / advanced).
 
-**Assumption:** User-facing **SSSD OIDC** app registration already provisioned (hybrid identity / UID-GID via customized SSSD + AD hybrid accounts). Do **not** re-request that unless expanding scopes.
+**Already done — do not re-request:** SSSD OIDC app registration; hybrid UID/GID SSSD path.
 
 ---
 
 ## How to file
 
-For each row, open an IAM ticket with:
-
-1. **Microsoft term** (exact feature name)  
-2. **Environment** (Pilot / Prod tenant)  
-3. **Justification** (link epic ID)  
-4. **Owners** (Linux platform + IAM)  
-5. **Rollback**  
-6. **Test plan** (what we can validate with limited access)
+1. Microsoft product term (exact)  
+2. Environment (Pilot / Prod)  
+3. Justification + epic  
+4. Owners (Linux platform + IAM)  
+5. Rollback  
+6. Test plan  
 
 ---
 
-## REQ-ENH catalog
+## MVP requests (device compliance path)
 
-| ID | Microsoft term | What to request | Why | Phase | Depends on |
-|----|----------------|-----------------|-----|-------|------------|
-| **REQ-E01** | **App registration** (Microsoft Entra ID) | New confidential/public app for **Linux TPM-CBA enrollment helper** (if automation calls Graph) | CSR inventory, cert status APIs if used | 1 | — |
-| **REQ-E02** | **Certificate authorities** (Entra CBA) | Upload/register **enterprise PKI chain** used for **user CBA** (if not already for smart card) | Enable Entra CBA for Linux TPM certs | 1 | Enterprise CA ready |
-| **REQ-E03** | **Certificate-based authentication** method | Enable CBA authentication method for pilot security group | Passwordless phishing-resistant login | 1 | REQ-E02 |
-| **REQ-E04** | **Authentication binding policy** (CBA) | MFA binding rules for intermediate/OID policy | Count cert auth as MFA strength | 1 | REQ-E03 |
-| **REQ-E05** | **Username binding policy** (CBA) | Map cert SAN UPN and/or `certificateUserIds` | User resolution | 1 | REQ-E03 |
-| **REQ-E06** | **Certificate user IDs** attribute population | Process/automation rights or IAM runbook to set `certificateUserIds` if high-affinity binding | When SAN UPN not used | 1 | REQ-E05 |
-| **REQ-E07** | **Authentication strengths** | Include CBA (and existing FIDO/Hello) in phishing-resistant strength | CA grant control | 1 | REQ-E04 |
-| **REQ-E08** | **Conditional Access policy** (report-only) | Pilot: require **compliant device** + **phishing-resistant MFA** for selected cloud apps; include **Linux** platform | Validate without lockout | 1 | Intune Linux, REQ-E07 |
-| **REQ-E09** | **Conditional Access policy** (on) | Same as E08 → **On** for pilot group | Enforce | 1 | Pilot success |
-| **REQ-E10** | **Microsoft Intune** — Linux enrollment | Confirm MDM authority; enrollment restrictions allow corporate Linux | Device object + compliance | 1 | — |
-| **REQ-E11** | **Compliance policy** (Linux) | Built-in: distro, encryption, password | Baseline health | 1 | REQ-E10 |
-| **REQ-E12** | **Custom compliance** (Linux) | Discovery script + JSON rules for trust agent status.json | TPM-CBA, policy_gen, workload cert | 1 | REQ-E11 |
-| **REQ-E13** | **Microsoft Entra ID app registration** — **Microsoft Graph** application permissions | Minimal Graph for Intune/device read if automation needs it (`DeviceManagement*.Read`, etc.) — **least privilege** | AWX/reporting | 1–2 | Security review |
-| **REQ-E14** | **Admin consent** | Tenant admin consent for REQ-E01/E13 | Required for app perms | 1 | E01/E13 |
-| **REQ-E15** | **Workload identity federation** | Federated credential on app/managed identity for **SPIRE OIDC issuer** (JWT-SVID) | Phase 3 secret-less Azure access | 3 | SPIRE OIDC provider |
-| **REQ-E16** | **Break-glass accounts** exclusion | Exclude emergency accounts from pilot CA | Safety | 1 | E08 |
-| **REQ-E17** | **CRL / CDN reachability** | Confirm Entra can fetch enterprise CRL over HTTP | CBA revocation | 1 | E02 |
-| **REQ-E18** | **Group-based licensing / Intune license** | Linux pilot users licensed for Intune | Enrollment | 1 | — |
-| **REQ-E19** | **Privileged Identity Management** (if used) | PIM for any role that edits CBA/CA | Tier-0 hygiene | 1 | — |
-| **REQ-E20** | **Cross-tenant / hybrid** notes | Document hybrid join vs Entra-only device objects for Linux (Linux = Intune enrolled, not classic hybrid AD join) | Architect clarity | 1 | — |
+| ID | Microsoft term | What to request | Why | Depends on |
+|----|----------------|-----------------|-----|------------|
+| **REQ-M01** | **Microsoft Intune** — Linux enrollment | MDM authority; enrollment restrictions allow corporate Linux | Device object | — |
+| **REQ-M02** | **Group-based licensing / Intune license** | Pilot users licensed for Intune | Enrollment | M01 |
+| **REQ-M03** | **Compliance policy** (Linux) | Built-in: distro, encryption, password as needed | Baseline health | M01 |
+| **REQ-M04** | **Custom compliance** (Linux) | Discovery script + JSON rules (prewritten artifacts from `ltz-client`) | Attestor-backed posture → Compliant bit | M03 |
+| **REQ-M05** | **Conditional Access policy** (report-only) | Pilot: **require compliant device** for selected apps; include **Linux** | Validate without lockout | M04 |
+| **REQ-M06** | **Conditional Access policy** (on) | Same as M05 → **On** for pilot group | Enforce | M05 pilot clean |
+| **REQ-M07** | **Break-glass accounts** exclusion | Exclude emergency accounts from pilot CA | Safety | M05 |
+| **REQ-M08** | **Microsoft Entra ID app registration** + **Graph** (optional) | Least-privilege device/compliance read or notes if collector pushes signals | Automation | Security review |
+| **REQ-M09** | **Admin consent** | For M08 if used | App perms | M08 |
+| **REQ-M10** | **Documentation note** | Linux = Intune enrolled device object; **not** classic hybrid AD join / Autopilot | Architect clarity | — |
+
+### MVP CA policy note
+
+MVP Conditional Access should emphasize **compliant device**.  
+Do **not** block MVP on **phishing-resistant MFA / CBA** unless org policy already requires it for all platforms.
 
 ---
 
-## Already done (do not re-request)
+## Future requests (user passwordless / Hello-class + advanced)
 
-| Item | Status |
-|------|--------|
-| SSSD OIDC **application registration** + permissions | **Done** |
-| Hybrid identity path (custom SSSD, UID/GID with AD hybrid accounts) | **Done** (in-house repo) |
+| ID | Microsoft term | What to request | Why |
+|----|----------------|-----------------|-----|
+| **REQ-F01** | **Certificate authorities** (Entra CBA) | Upload enterprise **user/CBA** chain | Enable CBA |
+| **REQ-F02** | **Certificate-based authentication** method | Enable CBA for pilot group | Passwordless user auth |
+| **REQ-F03** | **Authentication binding policy** (CBA) | MFA binding for intermediate | Strength |
+| **REQ-F04** | **Username binding policy** (CBA) | SAN UPN / certificateUserIds | User resolution |
+| **REQ-F05** | **Certificate user IDs** population | If high-affinity binding | Optional |
+| **REQ-F06** | **Authentication strengths** | Include CBA (+ FIDO/Hello) in phishing-resistant strength | CA grant |
+| **REQ-F07** | **Conditional Access** update | Add phishing-resistant MFA **in addition to** compliant device | Full parity |
+| **REQ-F08** | **CRL reachability** | Entra can fetch enterprise CRL | Revocation |
+| **REQ-F09** | **App registration** (optional CBA helper) | Graph for cert inventory if needed | Automation |
+| **REQ-F10** | **Workload identity federation** | SPIRE OIDC issuer federated credential | Phase workload |
+| **REQ-F11** | **PIM** for CBA/CA admin roles | Tier-0 hygiene | Optional |
 
 ---
 
-## Request template (copy/paste)
+## Retired / remapped IDs
+
+Earlier REQ-E01–E20 mapped as:
+
+- Device/Intune/CA compliant → **REQ-M\***  
+- CBA / phishing-resistant / SPIRE federation → **REQ-F\***  
+
+---
+
+## Request template
 
 ```text
-Title: [Linux ZT] <Microsoft term> — <REQ-ID>
+Title: [Linux ZT][MVP|Future] <Microsoft term> — <REQ-ID>
 
 Microsoft product term: <exact>
 Tenant: <pilot|prod>
+Phase: MVP | Future
 Epic: LTZ-<n>
-Justification: Enable Linux fleet Zero Trust parity (user CBA / device compliance / workload federation).
+Justification: <device compliance | user CBA | workload federation>
 
 Configuration requested:
 - ...
 
 Security:
 - Least privilege
-- Pilot security group only: <group>
-- Rollback: disable method/policy / remove assignment
+- Pilot group only: <group>
+- Rollback: ...
 
-Validation we will perform (Linux team):
-- ...
-
-Dependencies:
+Validation (Linux team):
 - ...
 ```
 
 ---
 
-## Ownership RACI (Entra touchpoints)
+## RACI
 
-| Activity | Linux platform | IAM / Entra admins | Security |
-|----------|----------------|--------------------|----------|
+| Activity | Linux platform | IAM | Security |
+|----------|----------------|-----|----------|
 | Draft REQ | R | C | C |
 | Implement tenant change | C | R | A |
 | Pilot validate | R | C | C |
