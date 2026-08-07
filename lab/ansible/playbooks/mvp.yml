@@ -1,0 +1,68 @@
+---
+# Lab automation: MVP device-trust path only (no CBA, no SPIRE).
+
+- name: Deploy attestor on lab_rp
+  hosts: lab_rp
+  become: true
+  roles:
+    - lab_attestor
+
+- name: Deploy collector on lab_rp
+  hosts: lab_rp
+  become: true
+  tasks:
+    - name: Collector dir
+      ansible.builtin.file:
+        path: /opt/ltz-collector
+        state: directory
+        mode: "0755"
+    - name: Copy collector
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../../services/collector/"
+        dest: /opt/ltz-collector/
+    - name: venv
+      ansible.builtin.shell: |
+        set -e
+        python3 -m venv /opt/ltz-collector/.venv
+        /opt/ltz-collector/.venv/bin/pip install -r /opt/ltz-collector/requirements.txt
+      args:
+        creates: /opt/ltz-collector/.venv/bin/python
+    - name: Unit
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/ltz-collector.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=LTZ collector
+          After=network.target ltz-attestor.service
+          [Service]
+          Environment=PORT=8089
+          Environment=LTZ_ATTESTOR_VERIFY_URL=http://127.0.0.1:8443/v1/verify_ticket
+          WorkingDirectory=/opt/ltz-collector
+          ExecStart=/opt/ltz-collector/.venv/bin/python app.py
+          Restart=on-failure
+          [Install]
+          WantedBy=multi-user.target
+    - name: Enable collector
+      ansible.builtin.systemd:
+        name: ltz-collector
+        enabled: true
+        state: restarted
+        daemon_reload: true
+
+- name: Enroll + install production client on workstations
+  hosts: lab_workstations
+  become: true
+  vars:
+    ltz_attestor_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443"
+    ltz_collector_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8089"
+    ltz_join_token: lab-join
+  pre_tasks:
+    - name: Enroll device
+      ansible.builtin.include_role:
+        name: lab_enroll
+  roles:
+    - role: ltz_trust_agent
+      vars:
+        ltz_attestor_url: "{{ ltz_attestor_url }}"
+        ltz_collector_url: "{{ ltz_collector_url }}"

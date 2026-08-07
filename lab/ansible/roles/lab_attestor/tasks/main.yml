@@ -1,0 +1,61 @@
+---
+- name: Packages
+  ansible.builtin.apt:
+    name: [python3, python3-pip, python3-venv, curl, jq]
+    state: present
+    update_cache: true
+
+- name: App directory
+  ansible.builtin.file:
+    path: /opt/ltz-attestor
+    state: directory
+    mode: "0755"
+
+- name: Copy attestor from design-repo services tree
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../../services/attestor/"
+    dest: /opt/ltz-attestor/
+    mode: "0644"
+
+- name: venv + deps
+  ansible.builtin.shell: |
+    set -euo pipefail
+    python3 -m venv /opt/ltz-attestor/.venv
+    /opt/ltz-attestor/.venv/bin/pip install -r /opt/ltz-attestor/requirements.txt
+  args:
+    creates: /opt/ltz-attestor/.venv/bin/flask
+
+- name: Data dir
+  ansible.builtin.file:
+    path: /var/lib/ltz-attestor
+    state: directory
+    mode: "0750"
+
+- name: systemd unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-attestor.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ thin attestor
+      After=network.target
+      [Service]
+      Environment=PORT=8443
+      Environment=LTZ_ATTESTOR_TOKEN_TTL=3600
+      Environment=LTZ_ATTESTOR_HMAC_SECRET={{ ltz_attestor_hmac_secret | default('lab-only-secret') }}
+      Environment=LTZ_ATTESTOR_REGISTRY=/var/lib/ltz-attestor/devices.json
+      Environment=LTZ_ATTESTOR_JOIN_TOKEN={{ ltz_join_token | default('lab-join') }}
+      Environment=LTZ_ATTESTOR_REQUIRE_ENROLL=1
+      Environment=LTZ_ATTESTOR_STRICT_TPM=0
+      WorkingDirectory=/opt/ltz-attestor
+      ExecStart=/opt/ltz-attestor/.venv/bin/python app.py
+      Restart=on-failure
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable attestor
+  ansible.builtin.systemd:
+    name: ltz-attestor
+    enabled: true
+    state: restarted
+    daemon_reload: true

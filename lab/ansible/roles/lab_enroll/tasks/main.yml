@@ -1,0 +1,23 @@
+---
+- name: Ensure device id
+  ansible.builtin.shell: |
+    set -euo pipefail
+    mkdir -p /var/lib/ltz-trust
+    if [ ! -f /var/lib/ltz-trust/device_id ]; then
+      echo "ltz-$(cat /etc/machine-id)" > /var/lib/ltz-trust/device_id
+    fi
+    cat /var/lib/ltz-trust/device_id
+  register: device_id_cmd
+  changed_when: false
+
+- name: Enroll with lab attestor
+  ansible.builtin.uri:
+    url: "{{ ltz_attestor_url }}/v1/enroll"
+    method: POST
+    body_format: json
+    body:
+      device_id: "{{ device_id_cmd.stdout | trim }}"
+      join_token: "{{ ltz_join_token | default('lab-join') }}"
+      meta:
+        hostname: "{{ inventory_hostname }}"
+    status_code: [200, 201]

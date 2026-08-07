@@ -1,0 +1,71 @@
+---
+- name: Packages for agent
+  ansible.builtin.package:
+    name: [curl, jq, openssl]
+    state: present
+
+- name: Directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0750"
+    owner: root
+    group: root
+  loop:
+    - "{{ ltz_state_dir }}"
+    - "{{ ltz_config_dir }}"
+    - /usr/local/lib/ltz
+
+- name: Install agent script
+  ansible.builtin.copy:
+    src: ltz-trust-agent.sh
+    dest: /usr/local/lib/ltz/ltz-trust-agent.sh
+    mode: "0755"
+
+- name: Config env
+  ansible.builtin.copy:
+    dest: "{{ ltz_config_dir }}/config.env"
+    mode: "0640"
+    content: |
+      LTZ_ATTESTOR_URL="{{ ltz_attestor_url }}"
+      LTZ_COLLECTOR_URL="{{ ltz_collector_url }}"
+      LTZ_STATE_DIR="{{ ltz_state_dir }}"
+      LTZ_STRICT_TPM="{{ 1 if ltz_strict_tpm else 0 }}"
+
+- name: systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-trust-agent.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ trust/compliance agent
+      After=network-online.target
+      [Service]
+      Type=oneshot
+      EnvironmentFile=-{{ ltz_config_dir }}/config.env
+      ExecStart=/usr/local/lib/ltz/ltz-trust-agent.sh
+
+- name: systemd timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-trust-agent.timer
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Run LTZ trust agent on interval
+      [Timer]
+      OnBootSec=1min
+      OnUnitActiveSec={{ ltz_agent_interval }}
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+
+- name: Enable timer and run once
+  ansible.builtin.systemd:
+    name: ltz-trust-agent.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Run agent once now
+  ansible.builtin.command: /usr/local/lib/ltz/ltz-trust-agent.sh
+  changed_when: true
