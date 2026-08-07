@@ -33,7 +33,7 @@
 
 6. Entra **CBA** / FIDO for phishing-resistant **user** auth (no USB day-to-day).  
 7. AWX continuous policy (GPO-class).  
-8. Workload MS CA intermediate ± SPIRE.
+8. Workload MS CA intermediate ± SPIRE; **production 802.1X** device EAP-TLS.
 
 ---
 
@@ -46,7 +46,7 @@
 | **M2** | Tenant plug-in | REQ-M* granted; enroll pilot; CA compliant device report-only→on | Depends on IAM |
 | **F1** | User CBA / FIDO | REQ-F*; TPM PKCS#11 path; auth strength (optional) | After M2 |
 | **F2** | Management depth | New AWX + goldimage assert + policy packs | Parallel/after M1 |
-| **F3** | Workload identity | MS CA intermediate ± SPIRE | After M2 |
+| **F3** | Workload + device PKI / 802.1X | MS CA intermediate ± SPIRE; production device EAP-TLS | After M2 |
 
 ---
 
@@ -69,8 +69,9 @@
 | Client agent | `client/` agent + systemd; Ansible role |
 | Intune artifacts | `client/intune/discovery.sh` + `rules.json` |
 | Lab orchestration | `lab/ansible/playbooks/mvp.yml` |
+| Optional lab 802.1X | FreeRADIUS + device cert from attestor path (not required for Compliant bit) |
 
-**Exit:** Attested device gets ticket; unenrolled/expired denied; discovery JSON reflects ticket freshness.
+**Exit:** Attested device gets ticket; unenrolled/expired denied; discovery JSON reflects ticket freshness. Optional: EAP-TLS accept/reject against lab RADIUS.
 
 ---
 
@@ -93,9 +94,9 @@ File and complete **REQ-M01–M10** (see ENTRA_REQUESTS.md):
 |-------|------|------|
 | **F1** | TPM CBA or FIDO; no USB daily UX | REQ-F01–F08 |
 | **F2** | AWX ZT packs, continuous enforce | — |
-| **F3** | Workload certs, optional SPIRE, federation | REQ-F10 |
+| **F3** | Workload certs, optional SPIRE; **production 802.1X** device certs + RADIUS | REQ-F10 (+ network eng) |
 
-Details: [tpm-cba-no-usb.md](../runbooks/tpm-cba-no-usb.md), [workload-certs-ms-ca.md](../runbooks/workload-certs-ms-ca.md), [spiffe-spire.md](../runbooks/spiffe-spire.md).
+Details: [tpm-cba-no-usb.md](../runbooks/tpm-cba-no-usb.md), [workload-certs-ms-ca.md](../runbooks/workload-certs-ms-ca.md), [spiffe-spire.md](../runbooks/spiffe-spire.md), [device-8021x-eap-tls.md](../runbooks/device-8021x-eap-tls.md).
 
 ---
 
@@ -112,6 +113,7 @@ See [dependencies-and-repos.md](dependencies-and-repos.md) and [../architecture/
 | IAM delay on REQ-M* | Lab + mock Intune continues; no idle engineering |
 | Custom compliance forgeable | Attestor-backed tickets; short TTL |
 | Scope creep into CBA | Keep CBA in F1 only |
+| 802.1X uses user cert | Enforce machine cert only; separate template from CBA |
 | Lab code leaks into prod | Hard boundary: no `lab/` in AWX projects |
 
 ---

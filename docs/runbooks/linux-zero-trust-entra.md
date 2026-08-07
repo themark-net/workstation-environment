@@ -17,7 +17,7 @@ Linux joins the **same** Entra / Intune / Conditional Access plane as Windows fo
 | Plane | MVP | Future |
 |-------|-----|--------|
 | User session | SSSD OIDC (done) | + Entra CBA / FIDO |
-| Device | Attestor-backed compliance → Intune → CA compliant device | PCR/MAA hardening |
+| Device | Attestor-backed compliance → Intune → CA compliant device | PCR/MAA hardening; **802.1X machine EAP-TLS** |
 | Workload | — | MS CA ± SPIRE |
 | Management | Ansible client role | AWX continuous |
 
@@ -46,3 +46,14 @@ Lab: `lab/` → `make ansible-mvp`.
 ## 4. Repo boundaries
 
 [../architecture/REPO-BOUNDARIES.md](../architecture/REPO-BOUNDARIES.md) — production client **never** depends on `lab/`.
+
+---
+
+## Device network auth (802.1X)
+
+Machine **EAP-TLS** uses the **device** client certificate from the attestor path (plane D). Do not use user CBA or SSSD credentials for 802.1X.
+
+- Architecture: [../architecture/device-8021x-eap-tls.md](../architecture/device-8021x-eap-tls.md)  
+- Runbook: [device-8021x-eap-tls.md](device-8021x-eap-tls.md)  
+
+Lab: optional RADIUS demo. Production: device intermediate + RADIUS (aligns with F3 PKI).
