@@ -1,0 +1,7 @@
+---
+ltz_attestor_url: ""
+ltz_collector_url: ""
+ltz_state_dir: /var/lib/ltz-trust
+ltz_config_dir: /etc/ltz-trust
+ltz_strict_tpm: false
+ltz_agent_interval: "15min"

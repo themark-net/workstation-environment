@@ -1,66 +1,43 @@
-# LTZ Lab Environment
+# LTZ Lab Environment (lab-only)
 
-Programmatic deployment of the **offline / pre-tenant POC** lab described in [docs/poc/POC_PATH.md](../docs/poc/POC_PATH.md).
+**This tree provisions disposable lab infrastructure only.**  
+It is **not** a production dependency. Production client code lives in [`../client/`](../client/); services in [`../services/`](../services/).
 
-## Why Proxmox
+See [docs/architecture/REPO-BOUNDARIES.md](../docs/architecture/REPO-BOUNDARIES.md).
 
-| Option | Pros | Cons | Use when |
-|--------|------|------|----------|
-| **Proxmox VE** (default) | vTPM easy, full VMs, snapshots, homelab-friendly | Needs a Proxmox host | You already run PVE or can spare a box |
-| **libvirt / KVM** | Similar to PVE without PVE UI | More DIY networking | No Proxmox |
-| **Docker Compose** (subset) | Fast CA + RP + fake workloads | **No real TPM path** | Crypto-less dry-run of CA/RP only |
-
-**Recommendation:** Proxmox for full POC (vTPM). Use Docker only to smoke-test step-ca + nginx before VMs exist.
-
-## Architecture (default topology)
-
-| VM name | vCPU | RAM | Disk | vTPM | Role |
-|---------|-----:|----:|-----:|:----:|------|
-| ltz-lab-ca | 2 | 2G | 20G | no | step-ca (lab PKI) |
-| ltz-lab-rp | 2 | 2G | 20G | no | nginx mTLS + gate API |
-| ltz-lab-ws1 | 4 | 4G | 40G | **yes** | Workstation POC |
-| ltz-lab-svc-a | 1 | 1G | 10G | no | Workload A |
-| ltz-lab-svc-b | 1 | 1G | 10G | no | Workload B |
-| ltz-lab-spire | 2 | 2G | 20G | no | SPIRE server (optional) |
-
-## Prerequisites
-
-### Proxmox host
-
-- Proxmox VE 8.x recommended
-- API token with VM provision rights
-- Ubuntu 24.04 cloud image template (see `scripts/pve-create-ubuntu-template.sh`)
-- swtpm for vTPM (included with PVE TPM emulation)
-
-### Controller
-
-- OpenTofu >= 1.6 or Terraform >= 1.5
-- Ansible >= 2.15
-- make, ssh, jq
-
-## Quick start
+## MVP path (compliance-first)
 
 ```bash
 cd lab
 cp terraform/terraform.tfvars.example terraform/terraform.tfvars
 # edit tfvars
 
-make tf-init
-make tf-apply
+make tf-init && make tf-apply
 make wait-ssh
 make ansible-bootstrap
-make ansible-lab
+make ansible-mvp          # attestor + collector + enroll + client role
 make validate
 ```
 
-Optional SPIRE: `make ansible-spire`  
-Docker smoke (no TPM): `make docker-up`
+`ansible-mvp` deploys:
+
+1. **Thin attestor** (`services/attestor`) on `lab_rp`  
+2. **Collector** + mock Intune sink (`services/collector`) on `lab_rp`  
+3. **Enroll** workstation birth record  
+4. **Production client role** (`client/ansible/roles/ltz_trust_agent`) on `lab_workstations`  
+
+No CBA, no SPIRE in MVP.
 
 ## Layout
 
-- `terraform/` — VM lifecycle
-- `ansible/` — step-ca, nginx, trust-agent, workloads, spire
-- `cloud-init/` — user-data template
-- `docker/` — CA+RP subset
-- `scripts/` — helpers
-- `evidence/` — local validation outputs (gitignored content)
+| Path | Role |
+|------|------|
+| `terraform/` | Proxmox VMs (incl. vTPM workstation) |
+| `ansible/roles/lab_*` | Lab-only glue |
+| `ansible/playbooks/mvp.yml` | MVP orchestration |
+| `../client/` | **Prod client** (referenced, not forked) |
+| `../services/` | **Prod services** (copied onto lab VMs at deploy time) |
+
+## Full legacy site playbook
+
+`make ansible-lab` still runs broader POC roles. Prefer **`make ansible-mvp`** for the compliance-first demo.
