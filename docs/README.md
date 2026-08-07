@@ -11,6 +11,13 @@
 | [Repo boundaries](architecture/REPO-BOUNDARIES.md) | client vs lab vs services |
 | [Thin attestor](architecture/thin-attestor.md) | MVP device trust core |
 
+## Presentations
+
+| Document | Purpose |
+|----------|---------|
+| [presentations/](presentations/) | High-level executive briefing |
+| [ltz-deck.js](presentations/ltz-deck.js) | PptxGenJS source — run with `node` to build `.pptx` |
+
 ## Runbooks
 
 | Document | Purpose |
@@ -28,6 +35,7 @@
 |----------|---------|
 | [Entra requests (MVP / Future)](implementation/ENTRA_REQUESTS.md) | REQ-M* / REQ-F* |
 | [Dependencies & repos](implementation/dependencies-and-repos.md) | Repo map |
+| [Executive proposal](executive/EXECUTIVE-PROPOSAL.md) | Steering |
 
 ## Code trees
 
