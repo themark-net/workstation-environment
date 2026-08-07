@@ -30,3 +30,7 @@ node docs/presentations/ltz-deck.js
 9. Success criteria  
 
 Canonical architecture: [../architecture/MVP-AND-FUTURE-STATE.md](../architecture/MVP-AND-FUTURE-STATE.md)
+
+### Speaker note (network)
+
+If asked about **802.1X**: machine EAP-TLS uses the **same device certificate** gated by the thin attestor — not user CBA. Lab optional; production with enterprise CA + RADIUS (device plane / F3 PKI). See architecture `device-8021x-eap-tls.md`.

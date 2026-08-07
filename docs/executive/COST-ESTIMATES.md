@@ -10,7 +10,7 @@
 | **M2** Tenant plug-in support (REQ-M*, pilot, CA) | 40–80 (mostly wait/IAM) |
 | **F1** User CBA / FIDO (optional later) | 80–120 |
 | **F2** AWX policy plane | 100–160 |
-| **F3** Workload MS CA ± SPIRE | 120–200 |
+| **F3** Workload MS CA ± SPIRE; device 802.1X EAP-TLS | 120–220 |
 | **Contingency** | 15% |
 
 **MVP subtotal (M0–M2):** ~200–320 h before contingency.  
