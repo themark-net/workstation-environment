@@ -20,3 +20,12 @@
 - Pin **ltz-client** / attestor / collector tags in lab and AWX.  
 - Never pin production automation to `lab/` paths.  
 - Docs: `main` on this repo is architecture source of truth.
+
+### 802.1X / RADIUS
+
+| Dependency | Owner |
+|------------|--------|
+| Device client cert from attestor/CA | ltz-attestor + PKI |
+| Client EAP-TLS config | ltz-client Ansible |
+| Lab RADIUS | ltz-lab |
+| Production RADIUS/NPS + switch/WLAN | Network team (external) |

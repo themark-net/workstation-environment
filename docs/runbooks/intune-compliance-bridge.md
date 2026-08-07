@@ -23,3 +23,9 @@ Artifacts (upload as-is on plug-in day):
 Lab uses **mock Intune** at collector `GET /v1/mock-intune` until tenant access exists.
 
 Do not treat discovery script output as hardware proof without the **thin attestor** ticket.
+
+---
+
+## Relation to 802.1X
+
+Intune **Compliant** gates **cloud** Conditional Access. **802.1X** gates **LAN** access using the same attestor-backed **device cert**. A host can fail closed on the wire without a valid cert even if cloud policies differ. Do not conflate user CBA certs with machine EAP-TLS. See [device-8021x-eap-tls.md](device-8021x-eap-tls.md).

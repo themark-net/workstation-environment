@@ -10,3 +10,5 @@
 | [../executive/COST-ESTIMATES.md](../executive/COST-ESTIMATES.md) | Hours |
 
 Architecture: [../architecture/MVP-AND-FUTURE-STATE.md](../architecture/MVP-AND-FUTURE-STATE.md)
+
+Network machine auth (802.1X EAP-TLS on device certs): [../architecture/device-8021x-eap-tls.md](../architecture/device-8021x-eap-tls.md) · [../runbooks/device-8021x-eap-tls.md](../runbooks/device-8021x-eap-tls.md).

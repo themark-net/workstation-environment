@@ -14,3 +14,7 @@
 Do **not** title the MVP epic “TPM-CBA.” CBA belongs under **LTZ-F1**.
 
 REQ catalog: [../../implementation/ENTRA_REQUESTS.md](../../implementation/ENTRA_REQUESTS.md).
+
+### Network
+
+Optional epic **LTZ-N1** / stories under **F3**: lab FreeRADIUS; production device EAP-TLS + RADIUS trust. Links: architecture `device-8021x-eap-tls.md`.
