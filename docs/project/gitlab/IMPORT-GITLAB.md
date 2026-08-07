@@ -1,50 +1,9 @@
-# Importing into GitLab
+# Import GitLab issues
 
-## Option 1 — CSV import (GitLab Premium/Ultimate often; check your tier)
+**Note (2026-08-07):** Issue CSVs may still contain legacy strings after bulk replace. Prefer labels in [labels.md](labels.md) and file new work against **MVP M0–M2** and **REQ-M***.
 
-Project → Issues → Import · or bulk import via API.
+1. Create labels from [labels.md](labels.md).  
+2. Import or recreate issues keyed to [IMPLEMENTATION_PLAN.md](../../implementation/IMPLEMENTATION_PLAN.md).  
+3. Link Jira epics per [../mapping/link-conventions.md](../mapping/link-conventions.md).
 
-Columns in `gitlab-issues.csv`:
-
-`title`, `description`, `labels`, `weight`, `milestone`, `due_date`, `issue_type`
-
-## Option 2 — API script (all tiers with token)
-
-```bash
-# Example pattern (requires glab or curl + PRIVATE-TOKEN)
-# glab issue create --title "..." --label "..." --description "..."
-```
-
-A helper script outline is in `scripts/import-gitlab-issues.sh` at repo root (optional).
-
-## Labels
-
-Create labels from [labels.md](labels.md) **before** import so colors/descriptions exist.
-
-## Milestones (suggested)
-
-| Milestone | Phase |
-|-----------|-------|
-| LZT-P0 | Foundations |
-| LZT-P1 | Device trust |
-| LZT-P2 | Workload certs |
-| LZT-P3 | SPIRE |
-| LZT-P4 | TPM-CBA |
-| LZT-P5 | Enforce |
-| LZT-P6 | Handoff |
-
-## Linking to Jira
-
-Each description includes:
-
-```text
-Jira-Backlog-Key: LZT-S01
-Jira: (fill after import) LZT-123
-```
-
-With GitLab Jira integration, mention `LZT-123` in MR/issue titles to auto-link.
-
-## Multiple repos
-
-Default import target: **workstation-environment** (docs/architecture).  
-Clone/filter CSV by label `repo::spire-infra` etc. when those repos exist, or import all into a single **lzt-program** GitLab project used as the program board.
+Canonical REQ IDs: [../../implementation/ENTRA_REQUESTS.md](../../implementation/ENTRA_REQUESTS.md).
