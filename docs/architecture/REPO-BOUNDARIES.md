@@ -33,14 +33,14 @@ Production-shaped **host** artifacts:
 - Trust / compliance **agent** scripts and unit files  
 - **Attestor client** (calls remote attestor; no lab URLs hard-coded — use vars)  
 - **Intune** discovery script + rules JSON (uploadable artifacts)  
-- **Ansible role(s)** to install agent on a real workstation the same way prod will  
+- **Ansible role(s)** to install agent and **machine 802.1X (EAP-TLS)** the same way prod will  
 
 **Must not import:** Proxmox, lab inventory, step-ca lab passwords, docker-compose lab stacks.
 
 ### ltz-attestor (`services/attestor/`)
 
-Thin attestation service: verify evidence → mint short-lived ticket/cert.  
-Configurable CA backend (lab step-ca **or** enterprise API via config, not code forks).
+Thin attestation service: verify evidence → mint short-lived ticket **and device client cert** (MVP 802.1X).  
+Configurable CA backend (embedded openssl device CA, lab step-ca, **or** enterprise API via config, not code forks).
 
 ### ltz-collector (`services/collector/`)
 
@@ -49,7 +49,7 @@ Accepts agent reports only with valid ticket; mock Intune sink + interface for G
 ### ltz-lab (`lab/`)
 
 - Terraform/OpenTofu for Proxmox VMs (vTPM, network)  
-- Lab CA, lab RP, lab enroll bootstrap  
+- Lab CA, lab RP, lab enroll bootstrap, **lab FreeRADIUS** (MVP 802.1X)  
 - Ansible that **configures lab VMs** and may *invoke* client roles against lab hosts  
 - Evidence scripts for demos  
 
@@ -82,13 +82,13 @@ prod AWX  ──may depend on──►  client roles only (never lab/)
 
 ---
 
-## Network client (802.1X)
+## Network client (802.1X) — MVP
 
 | Path / concern | Repo |
 |----------------|------|
-| `wpa_supplicant` / NetworkManager EAP-TLS profile, cert paths, renewal timer | **`client/`** (ltz-client) — Ansible role |
-| Device cert mint API | **`services/attestor/`** (or CA worker behind attestor) |
-| Lab FreeRADIUS + test CA | **`lab/`** only |
-| Production RADIUS / NPS | Network team — not this monorepo |
+| `wpa_supplicant` / NetworkManager EAP-TLS profile, cert paths, renewal | **`client/`** (`ltz_8021x` role) |
+| Device cert mint API | **`services/attestor/`** (`LTZ_ATTESTOR_ISSUE_DEVICE_CERT=1`) |
+| Lab FreeRADIUS + device CA trust | **`lab/`** (`lab_radius`, wired into `ansible-mvp`) |
+| Production RADIUS / NPS | Network team — pilot in M2; not deferred to Future |
 
-802.1X is a **consumer** of the device cert; it does not own a separate trust root. See [device-8021x-eap-tls.md](device-8021x-eap-tls.md).
+802.1X is a **MVP consumer** of the device cert; it does not own a separate trust root. See [device-8021x-eap-tls.md](device-8021x-eap-tls.md).

@@ -1,0 +1,7 @@
+---
+- name: Restart wpa_supplicant ltz
+  ansible.builtin.systemd:
+    name: wpa_supplicant@ltz
+    state: restarted
+    daemon_reload: true
+  failed_when: false

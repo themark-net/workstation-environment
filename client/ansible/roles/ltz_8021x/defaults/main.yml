@@ -1,0 +1,14 @@
+---
+ltz_state_dir: /var/lib/ltz-trust
+ltz_config_dir: /etc/ltz-trust
+# eth0-style wired interface; override per host/site
+ltz_8021x_interface: eth0
+ltz_8021x_enabled: true
+# wired | wireless
+ltz_8021x_medium: wired
+ltz_8021x_ssid: ""
+# Identity in EAP (machine); usually device CN / hostname
+ltz_8021x_identity: "{{ inventory_hostname }}"
+ltz_8021x_ca_path: "{{ ltz_state_dir }}/device-ca.crt"
+ltz_8021x_cert_path: "{{ ltz_state_dir }}/device.crt"
+ltz_8021x_key_path: "{{ ltz_state_dir }}/device.key"

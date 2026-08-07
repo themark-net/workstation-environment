@@ -8,3 +8,6 @@ trust_status_path: /var/lib/org-trust/status.json
 policy_gen_path: /var/lib/org-trust/policy_gen
 rp_https_port: 443
 gate_port: 8089
+# MVP 802.1X
+ltz_radius_clients_secret: lab-radius-secret
+ltz_8021x_interface: eth0

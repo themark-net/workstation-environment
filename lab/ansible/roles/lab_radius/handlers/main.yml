@@ -1,0 +1,6 @@
+---
+- name: Restart freeradius
+  ansible.builtin.systemd:
+    name: freeradius
+    state: restarted
+  failed_when: false

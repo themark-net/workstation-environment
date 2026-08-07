@@ -1,7 +1,9 @@
 title,description,labels
 "[LTZ-M0] Foundations / lab MVP","Repos boundaries; make ansible-mvp","phase::m0,area::lab"
-"[LTZ-M1] Thin attestor","enroll/attest/ticket service","phase::m1,area::device"
-"[LTZ-M1] Client trust agent","Ansible role + status.json","phase::m1,area::client"
+"[LTZ-M1] Thin attestor","enroll/attest/ticket + device cert mint","phase::m1,area::device"
+"[LTZ-M1] Client trust agent","Ansible role + status.json + cert renew","phase::m1,area::client"
 "[LTZ-M1] Intune artifacts","discovery.sh + rules.json","phase::m1,area::device"
+"[LTZ-M1] Device 802.1X EAP-TLS","ltz_8021x client role + lab FreeRADIUS; accept/reject/expire","phase::m1,area::network"
 "[LTZ-M2] REQ-M* tenant plug-in","Intune + CA compliant device","phase::m2,blocked::entra"
+"[LTZ-M2] Pilot RADIUS trust","Enterprise RADIUS trusts device intermediate","phase::m2,area::network"
 "[LTZ-F1] CBA Future","REQ-F*; not MVP","phase::f1,area::user"

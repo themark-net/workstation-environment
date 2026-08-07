@@ -1,7 +1,7 @@
 ---
 - name: Packages
   ansible.builtin.apt:
-    name: [python3, python3-pip, python3-venv, curl, jq]
+    name: [python3, python3-pip, python3-venv, curl, jq, openssl]
     state: present
     update_cache: true
 
@@ -27,9 +27,12 @@
 
 - name: Data dir
   ansible.builtin.file:
-    path: /var/lib/ltz-attestor
+    path: "{{ item }}"
     state: directory
     mode: "0750"
+  loop:
+    - /var/lib/ltz-attestor
+    - /var/lib/ltz-attestor/device-ca
 
 - name: systemd unit
   ansible.builtin.copy:
@@ -42,11 +45,14 @@
       [Service]
       Environment=PORT=8443
       Environment=LTZ_ATTESTOR_TOKEN_TTL=3600
+      Environment=LTZ_ATTESTOR_CERT_TTL=3600
       Environment=LTZ_ATTESTOR_HMAC_SECRET={{ ltz_attestor_hmac_secret | default('lab-only-secret') }}
       Environment=LTZ_ATTESTOR_REGISTRY=/var/lib/ltz-attestor/devices.json
       Environment=LTZ_ATTESTOR_JOIN_TOKEN={{ ltz_join_token | default('lab-join') }}
       Environment=LTZ_ATTESTOR_REQUIRE_ENROLL=1
       Environment=LTZ_ATTESTOR_STRICT_TPM=0
+      Environment=LTZ_ATTESTOR_ISSUE_DEVICE_CERT=1
+      Environment=LTZ_ATTESTOR_DEVICE_CA_DIR=/var/lib/ltz-attestor/device-ca
       WorkingDirectory=/opt/ltz-attestor
       ExecStart=/opt/ltz-attestor/.venv/bin/python app.py
       Restart=on-failure
@@ -59,3 +65,19 @@
     enabled: true
     state: restarted
     daemon_reload: true
+
+- name: Wait for attestor health
+  ansible.builtin.uri:
+    url: http://127.0.0.1:8443/healthz
+    return_content: true
+  register: attestor_health
+  retries: 15
+  delay: 2
+  until: attestor_health.status == 200
+
+- name: Bootstrap device CA (first attest path also creates it; warm-up via health + GET)
+  ansible.builtin.uri:
+    url: http://127.0.0.1:8443/v1/device_ca
+    return_content: true
+  register: device_ca
+  failed_when: false

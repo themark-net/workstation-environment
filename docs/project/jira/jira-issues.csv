@@ -1,17 +1,20 @@
 Issue Type,Summary,Description,Epic Name,Priority,Labels,Story Points,External ID
 Epic,[LTZ-M0] Foundations / lab MVP,"Repos boundaries, lab make ansible-mvp, RACI",LTZ-M0,High,"ltz,phase-m0",13,LTZ-M0
-Epic,[LTZ-M1] Device trust MVP,"Thin attestor, agent, collector, Intune artifacts",LTZ-M1,High,"ltz,phase-m1",34,LTZ-M1
-Epic,[LTZ-M2] Tenant plug-in,"REQ-M* Intune enroll, custom compliance, CA compliant device",LTZ-M2,High,"ltz,phase-m2",13,LTZ-M2
+Epic,[LTZ-M1] Device trust MVP,"Thin attestor, agent, collector, Intune artifacts, device cert + 802.1X",LTZ-M1,High,"ltz,phase-m1",42,LTZ-M1
+Epic,[LTZ-M2] Tenant plug-in,"REQ-M* Intune enroll, custom compliance, CA compliant device, pilot RADIUS",LTZ-M2,High,"ltz,phase-m2",13,LTZ-M2
 Epic,[LTZ-F1] Future user CBA/FIDO,"REQ-F* TPM CBA or FIDO; not MVP",LTZ-F1,Medium,"ltz,phase-f1",21,LTZ-F1
 Epic,[LTZ-F2] Future AWX policy plane,"Continuous Ansible GPO-class",LTZ-F2,Medium,"ltz,phase-f2",21,LTZ-F2
 Epic,[LTZ-F3] Future workload identity,"MS CA intermediate ± SPIRE; REQ-F10",LTZ-F3,Medium,"ltz,phase-f3",21,LTZ-F3
-Story,[LTZ-S001] Lab MVP green path,"make ansible-mvp + fail-closed evidence",LTZ-M0,High,"ltz,phase-m0",5,LTZ-S001
+Story,[LTZ-S001] Lab MVP green path,"make ansible-mvp + fail-closed + 802.1X evidence",LTZ-M0,High,"ltz,phase-m0",5,LTZ-S001
 Story,[LTZ-S002] Extract/pin client and services trees,"Zero lab deps for prod",LTZ-M0,High,"ltz,phase-m0",3,LTZ-S002
-Story,[LTZ-S010] Thin attestor service,"enroll/attest/ticket",LTZ-M1,High,"ltz,phase-m1",8,LTZ-S010
+Story,[LTZ-S010] Thin attestor service,"enroll/attest/ticket + device cert mint",LTZ-M1,High,"ltz,phase-m1",8,LTZ-S010
 Story,[LTZ-S011] Collector + mock Intune sink,"ticket-gated reports",LTZ-M1,High,"ltz,phase-m1",5,LTZ-S011
-Story,[LTZ-S012] Client trust agent + Ansible role,"status.json + timer",LTZ-M1,High,"ltz,phase-m1",8,LTZ-S012
+Story,[LTZ-S012] Client trust agent + Ansible role,"status.json + timer + cert renew",LTZ-M1,High,"ltz,phase-m1",8,LTZ-S012
 Story,[LTZ-S013] Intune discovery.sh + rules.json,"attested + ticket_fresh",LTZ-M1,High,"ltz,phase-m1",3,LTZ-S013
+Story,[LTZ-S014] Device 802.1X EAP-TLS client role,"ltz_8021x wpa_supplicant/NM machine auth",LTZ-M1,High,"ltz,phase-m1,area-network",5,LTZ-S014
+Story,[LTZ-S015] Lab FreeRADIUS for MVP,"lab_radius trusts device CA; accept/reject/expire",LTZ-M1,High,"ltz,phase-m1,area-network",5,LTZ-S015
 Story,[LTZ-S020] File REQ-M01–M04,"Intune enroll + compliance",LTZ-M2,High,"ltz,phase-m2,blocked-entra",3,LTZ-S020
 Story,[LTZ-S021] File REQ-M05–M07,"CA compliant device + break-glass",LTZ-M2,High,"ltz,phase-m2,blocked-entra",3,LTZ-S021
 Story,[LTZ-S022] Pilot enroll and validate Compliant,"10 hosts",LTZ-M2,High,"ltz,phase-m2",5,LTZ-S022
+Story,[LTZ-S023] Pilot RADIUS trust for device certs,"Network team trusts device intermediate",LTZ-M2,High,"ltz,phase-m2,area-network",3,LTZ-S023
 Story,[LTZ-S030] Future CBA path (REQ-F*),"After MVP; no USB",LTZ-F1,Medium,"ltz,phase-f1",8,LTZ-S030

@@ -8,10 +8,10 @@
 | **goldimage** | SSH, YubiKey admin baselines | Exists | No |
 | **sssd-hybrid** | OIDC + hybrid UID/GID | Done | No |
 | **workstation-environment** | Architecture, imports, lab harness docs | This repo | N/A |
-| **ltz-client** (`client/`) | Host agent, Intune artifacts, Ansible | MVP build | **No** |
+| **ltz-client** (`client/`) | Host agent, Intune artifacts, Ansible, **802.1X role** | MVP build | **No** |
 | **ltz-attestor** (`services/attestor/`) | Thin attestor | MVP build | **No** |
 | **ltz-collector** (`services/collector/`) | Report sink / mock Intune | MVP build | **No** |
-| **ltz-lab** (`lab/`) | Proxmox + lab-only deploy | Lab only | N/A |
+| **ltz-lab** (`lab/`) | Proxmox + lab-only deploy + **FreeRADIUS** | Lab only | N/A |
 | **zt-awx-config** | AWX CasC | Future | No |
 | **zt-spire-config** | SPIRE | Future | No |
 
@@ -21,11 +21,12 @@
 - Never pin production automation to `lab/` paths.  
 - Docs: `main` on this repo is architecture source of truth.
 
-### 802.1X / RADIUS
+### 802.1X / RADIUS (MVP)
 
 | Dependency | Owner |
 |------------|--------|
 | Device client cert from attestor/CA | ltz-attestor + PKI |
-| Client EAP-TLS config | ltz-client Ansible |
-| Lab RADIUS | ltz-lab |
-| Production RADIUS/NPS + switch/WLAN | Network team (external) |
+| Client EAP-TLS config | ltz-client (`ltz_8021x`) |
+| Lab RADIUS | ltz-lab (`lab_radius`, `make ansible-mvp`) |
+| Production RADIUS/NPS pilot | Network team (M2) |
+| Enterprise-wide switch/WLAN cutover | Network team (ops after pilot) |

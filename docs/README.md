@@ -1,6 +1,6 @@
 # Workstation Environment — Documentation
 
-**Canonical posture (2026-08-07):** **Compliance-first MVP**; Entra **CBA** is Future (Hello-class user auth), not device attestation.
+**Canonical posture (2026-08-07):** **Compliance-first MVP** (includes **device 802.1X EAP-TLS**); Entra **CBA** is Future (Hello-class user auth), not device attestation.
 
 ## Architecture (start here)
 
@@ -10,7 +10,7 @@
 | [Identity planes](architecture/identity-planes-overview.md) | Planes H/D/W/M |
 | [Repo boundaries](architecture/REPO-BOUNDARIES.md) | client vs lab vs services |
 | [Thin attestor](architecture/thin-attestor.md) | MVP device trust core |
-| [Device 802.1X EAP-TLS](architecture/device-8021x-eap-tls.md) | Machine network auth on device cert |
+| [Device 802.1X EAP-TLS](architecture/device-8021x-eap-tls.md) | **MVP** machine network auth on device cert |
 
 ## Presentations
 
@@ -25,7 +25,7 @@
 |----------|---------|
 | [Linux Zero Trust with Entra](runbooks/linux-zero-trust-entra.md) | Master runbook (MVP) |
 | [Intune compliance bridge](runbooks/intune-compliance-bridge.md) | Discovery/rules + attestor |
-| [Device 802.1X EAP-TLS](runbooks/device-8021x-eap-tls.md) | Machine EAP-TLS runbook |
+| [Device 802.1X EAP-TLS](runbooks/device-8021x-eap-tls.md) | **MVP** machine EAP-TLS runbook |
 | [TPM-backed Entra CBA](runbooks/tpm-cba-no-usb.md) | **Future** user passwordless |
 | [AWX GPO parity](runbooks/ansible-awx-gpo-parity.md) | Management depth |
 | [Workload MS CA](runbooks/workload-certs-ms-ca.md) | Future workload |

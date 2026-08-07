@@ -1,7 +1,7 @@
 ---
-# Production-shaped install of LTZ client agent.
+# Production-shaped install of LTZ client agent + machine 802.1X.
 # Inventory and attestor/collector URLs are provided by the caller — no lab imports.
-- name: LTZ trust agent
+- name: LTZ trust agent + 802.1X
   hosts: all
   become: true
   roles:
@@ -9,3 +9,6 @@
       vars:
         ltz_attestor_url: "{{ attestor_url | default(ltz_attestor_url) }}"
         ltz_collector_url: "{{ collector_url | default(ltz_collector_url) }}"
+    - role: ltz_8021x
+      vars:
+        ltz_8021x_enabled: "{{ enable_8021x | default(true) }}"
