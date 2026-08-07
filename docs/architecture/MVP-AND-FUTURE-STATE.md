@@ -14,9 +14,12 @@
 | **Device trust** | Enroll + **thin attestor** + compliance agent + Intune custom compliance + CA **require compliant device** | Stronger PCR/MAA; continuous re-attest |
 | **User phishing-resistant cloud auth** | **Not required for MVP** — existing MFA strength as org policy allows | **Entra CBA** (TPM PKCS#11, no USB) or FIDO2 — Hello-class hook |
 | **Workload identity** | Out of MVP unless a single agent needs a client cert | MS CA workload intermediate; optional SPIRE under MS CA |
+| **Network (802.1X)** | Design + optional lab RADIUS; same device cert path | Production EAP-TLS machine auth (RADIUS trusts device intermediate) |
 | **Management depth** | Ansible role on client (prod-shaped); AWX later | Full AWX GPO-parity schedules |
 
 **CBA is the passwordless / Hello-class *user* hook.** It is **not** Intune attestation and is **not** on the critical path for “trusted Linux host in Conditional Access.”
+
+**802.1X is machine (device) auth.** Use the attestor-gated **device** client cert for EAP-TLS — not the user CBA cert. See [device-8021x-eap-tls.md](device-8021x-eap-tls.md).
 
 ---
 
@@ -30,7 +33,8 @@ A Linux host can be shown to:
 4. Run a **compliance agent** that reports only with that identity.  
 5. Feed **Intune-shaped** compliance artifacts (discovery script + rules JSON), with a **mock sink** until tenant access exists.  
 6. **Fail closed** at a relying party without a valid ticket.  
-7. When tenant allows: real Intune enroll + upload script/JSON + CA require compliant device.
+7. When tenant allows: real Intune enroll + upload script/JSON + CA require compliant device.  
+8. *(Optional lab)* Demonstrate **802.1X EAP-TLS** with the same device cert against lab RADIUS (not required for Intune Compliant bit).
 
 **Explicitly out of MVP:** Entra CBA enablement, SPIRE, Keycloak/IdM, full AWX HA, MAA production wiring (optional swap-in later).
 
@@ -40,7 +44,7 @@ A Linux host can be shown to:
 
 - MVP chain remains.  
 - **User plane:** TPM-backed Entra CBA (no USB) and/or FIDO for phishing-resistant authentication strengths.  
-- **Device plane:** PCR golden sets, optional MAA as attestor backend, tighter Intune + CA.  
+- **Device plane:** PCR golden sets, optional MAA as attestor backend, tighter Intune + CA; **production 802.1X EAP-TLS** with device client certs.  
 - **Workload plane:** MS CA intermediate ± SPIRE.  
 - **Management:** AWX continuous enforce, goldimage assert, policy_gen → compliance.
 
@@ -52,6 +56,8 @@ A Linux host can be shown to:
 USER (done)     SSSD OIDC → Entra
 
 DEVICE (MVP)    enroll → thin attestor → short-lived ticket/cert
+                └─ same device cert → optional 802.1X EAP-TLS (lab);
+                   prod RADIUS when device CA available
                   → compliance agent → collector / Intune adapter
                   → CA: require compliant device
 
@@ -66,6 +72,7 @@ ACCESS          Conditional Access evaluates compliant device
 - [identity-planes-overview.md](identity-planes-overview.md)  
 - [REPO-BOUNDARIES.md](REPO-BOUNDARIES.md)  
 - [thin-attestor.md](thin-attestor.md)  
+- [device-8021x-eap-tls.md](device-8021x-eap-tls.md)  
 - [../implementation/ENTRA_REQUESTS.md](../implementation/ENTRA_REQUESTS.md) (MVP vs Future REQ split)  
 - [../../client/README.md](../../client/README.md) (production client code)  
 - [../../lab/README.md](../../lab/README.md) (lab-only infra)  

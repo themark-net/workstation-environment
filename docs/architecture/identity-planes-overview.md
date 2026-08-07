@@ -28,9 +28,12 @@ PLANE D — DEVICE (laptop/workstation)     ★ MVP CRITICAL PATH
   Thin attestor → short-lived device ticket/cert
   Compliance agent → collector / Intune custom compliance artifacts
   Conditional Access: require compliant device
+  Network: **802.1X EAP-TLS** uses the **same device cert** (machine auth)
+           Lab optional; production with device intermediate + RADIUS
 
 PLANE W — WORKLOAD (non-human)            Future / selective
   MS CA Workload Intermediate; optional SPIRE under MS CA
+  (Device 802.1X certs are plane D — sibling template, not user CBA)
 
 PLANE M — MANAGEMENT
   MVP: Ansible roles from ltz-client (prod-shaped)
@@ -47,6 +50,7 @@ PLANE M — MANAGEMENT
 | Intune custom compliance | **Maps** verified posture → Compliant bit |
 | Entra CBA | **User** cert auth to Entra (Future) |
 | SSSD OIDC | **User** session identity on Linux (Done) |
+| Device cert + 802.1X EAP-TLS | **Machine** network auth (plane D) — not user CBA |
 
 ---
 
@@ -58,3 +62,4 @@ PLANE M — MANAGEMENT
 4. **Custom compliance is necessary but not sufficient** without attestor-backed evidence.  
 5. **Client code must run without lab/** dependencies.  
 6. SPIRE/CBA/MAA are **Future** upgrades to the same chain shape.  
+7. **802.1X machine auth** consumes the device cert from the attestor path; it is not a parallel PKI and not user CBA. See [device-8021x-eap-tls.md](device-8021x-eap-tls.md).  
