@@ -1,215 +1,124 @@
-# Implementation Plan — Linux Zero Trust (Entra · Intune · AWX · Workload PKI · SPIRE)
+# Implementation Plan — Linux Zero Trust (Compliance-First)
 
-**Version:** 1.0  
-**Date:** 2026-08-05  
-**Repos (logical):**
+**Version:** 2.0  
+**Date:** 2026-08-07  
+**Canonical phasing:** [../architecture/MVP-AND-FUTURE-STATE.md](../architecture/MVP-AND-FUTURE-STATE.md)
 
-| Alias | Role |
-|-------|------|
-| **goldimage** | Existing gold playbooks: common baseline SSH, YubiKey for Linux **admin** accounts |
-| **sssd-hybrid** | Customized SSSD (OIDC + hybrid UID/GID with AD hybrid accounts) — **user path done** |
-| **workstation-environment** | Architecture, runbooks, import packages (this repo) |
-| **zt-awx-config** | *New* GitLab repo: AWX job templates, inventories, Zero Trust policy packs |
-| **zt-spire-config** | *New* GitLab repo: SPIRE server/agent manifests, trust domain config |
+---
 
-**Platform assumptions:**
+## 0. Constraints
 
-- Deploy **new** AWX (open source / Tower-compatible) instance — not share-prod with unrelated automation if isolation required  
-- Limited Entra write access → all tenant changes via [ENTRA_REQUESTS.md](ENTRA_REQUESTS.md)  
-- User-facing OIDC SSSD **complete**; do not block on re-doing it  
+| Item | Assumption |
+|------|------------|
+| SSSD OIDC + hybrid UID/GID | **Done** |
+| Goldimage (SSH + YubiKey admin) | **Exists** |
+| Entra / Intune rights | **Limited** — [ENTRA_REQUESTS.md](ENTRA_REQUESTS.md) / [entra-access-requests.md](entra-access-requests.md) |
+| Autopilot for Linux | **Out of scope** |
+| Entra CBA (Hello-class user) | **Future** — not MVP blocker |
+| SPIRE / workload MS CA | **Future** after MVP device trust |
 
 ---
 
 ## 1. Objectives
 
-1. Linux clients accepted under same **Conditional Access** posture as Windows (compliant device + phishing-resistant MFA).  
-2. **No USB** for day-to-day Entra passwordless: **TPM + Entra CBA**.  
-3. Continuous config via **AWX** (GPO-class), goldimage retained for admin baseline.  
-4. **Workload MS CA intermediate** for non-user agents; reduce static secrets and over-privileged local service accounts.  
-5. **SPIRE** deployed with new AWX for Phase 2 workload fabric (not laptop CBA substitute).  
-6. Traceability: **Jira epics/stories** ↔ **GitLab issues** ↔ git repos.
+### MVP (fund and deliver first)
+
+1. Linux **device trust** accepted under Conditional Access via **compliant device**.  
+2. **Thin attestor** + compliance agent so posture is not “local script honesty only.”  
+3. Prewritten Intune discovery/rules; plug in when tenant allows.  
+4. Production client code (**ltz-client**) has **zero** dependency on lab.  
+5. Lab proves enroll → attest → ticket → report → fail-closed.
+
+### Future (after MVP)
+
+6. Entra **CBA** / FIDO for phishing-resistant **user** auth (no USB day-to-day).  
+7. AWX continuous policy (GPO-class).  
+8. Workload MS CA intermediate ± SPIRE.
 
 ---
 
 ## 2. Phase overview
 
-| Phase | Name | Outcome | Rough calendar (sequential) |
-|-------|------|---------|------------------------------|
-| **0** | Foundations | AWX live, repos, goldimage integrated, RACI | 2–3 weeks |
-| **1** | Device + user ZT | Intune, trust agent, TPM-CBA pilot, CA report-only→on | 6–8 weeks |
-| **1b** | Workload certs | MS CA intermediate, agent certs, secret retirement | 3–4 weeks (overlap Phase 1) |
-| **2** | SPIRE | Servers, agents on servers/k8s first | 4–6 weeks |
-| **3** | Federation / scale | Entra workload federation, fleet GA | 3–4 weeks |
-| **4** | Hardening & ops | SLOs, runbooks ops, cost optimization | ongoing |
-
-Phases 1 and 1b intentionally overlap after AWX + PKI templates exist.
+| Phase | Name | Outcome | Calendar (rough) |
+|-------|------|---------|------------------|
+| **M0** | Foundations | Repos extracted/pinned; lab MVP runnable; RACI | 1–2 weeks |
+| **M1** | Device trust MVP | Attestor, agent, collector; Intune artifacts; mock→real compliance | 4–6 weeks |
+| **M2** | Tenant plug-in | REQ-M* granted; enroll pilot; CA compliant device report-only→on | Depends on IAM |
+| **F1** | User CBA / FIDO | REQ-F*; TPM PKCS#11 path; auth strength (optional) | After M2 |
+| **F2** | Management depth | New AWX + goldimage assert + policy packs | Parallel/after M1 |
+| **F3** | Workload identity | MS CA intermediate ± SPIRE | After M2 |
 
 ---
 
-## 3. Phase 0 — Foundations
+## 3. Phase M0 — Foundations
 
-### 0.1 Repos & branching
+- Confirm **REPO-BOUNDARIES**: `client/`, `services/*` extractable; `lab/` never in prod AWX.  
+- Lab: `make ansible-mvp` green on Proxmox (or docker smoke).  
+- Pin tags; document owners.
 
-| Repo | Contents | Default branch policy |
-|------|----------|----------------------|
-| goldimage | SSH, YubiKey admin, common baseline | protected main; tag releases |
-| sssd-hybrid | Custom SSSD packages/config (existing) | as today |
-| workstation-environment | Architecture + imports (this) | protected main |
-| zt-awx-config | Inventories, projects, credential docs (no secrets), playbooks/roles | MR required |
-| zt-spire-config | SPIRE helm/compose/ansible | MR required |
-
-### 0.2 New AWX instance
-
-- Deploy AWX (K8s or VM per org standard)  
-- SSO later optional; initial break-glass local admin  
-- Credential types: SSH (from goldimage patterns), Vault/cyberark if available  
-- Projects pointing at **zt-awx-config** + **goldimage** (read-only)  
-- Instance groups / inventories: `linux_pilot`, `linux_workstations`, `linux_servers`, `spire_infra`  
-
-### 0.3 Integrate goldimage
-
-- Job template: `Gold Baseline — SSH + YubiKey Admin`  
-- Runs first on all managed Linux (or assert already applied)  
-- Zero Trust packs **never** weaken admin YubiKey/SSH baseline  
-
-### 0.4 Deliverables
-
-- [ ] AWX URL, backup, RBAC  
-- [ ] GitLab projects + CI lint (ansible-lint)  
-- [ ] Jira project + imported epics  
-- [ ] GitLab issues imported with Jira keys in titles  
+**Exit:** Demo script produces happy-path + fail-closed evidence without Entra.
 
 ---
 
-## 4. Phase 1 — Device trust + human TPM-CBA
+## 4. Phase M1 — Device trust MVP (no CBA)
 
-### 4.1 Image & packages
+| Workstream | Deliverable |
+|------------|-------------|
+| Thin attestor | `services/attestor` — enroll + attest + short-lived ticket |
+| Collector | `services/collector` — ticket-gated reports; mock Intune |
+| Client agent | `client/` agent + systemd; Ansible role |
+| Intune artifacts | `client/intune/discovery.sh` + `rules.json` |
+| Lab orchestration | `lab/ansible/playbooks/mvp.yml` |
 
-- Supported distro(s) for Intune  
-- Packages: Edge, Identity Broker, tpm2-pkcs11 stack, Intune portal deps  
-- Role: `ms_broker_edge`, `intune_prep`, `auth_tpm_cba` (packages only first)
-
-### 4.2 Trust agent + Intune
-
-- Role: `trust_agent` → `/var/lib/org-trust/status.json`  
-- File REQ-E10–E12  
-- Custom compliance discovery reads status only  
-
-### 4.3 TPM-CBA enrollment path
-
-- Keygen in TPM, CSR, enterprise **user** CA template, NSS/broker  
-- Pilot N users (10–20)  
-- REQ-E02–E09, E16–E18  
-
-### 4.4 AWX schedules
-
-- Enforce baseline every 1–4h on pilot  
-- policy_gen stamped on success  
-- Fail compliance if stale  
-
-### 4.5 Exit criteria
-
-- Pilot users: Entra CBA success logs; Intune Compliant; CA report-only clean then On for pilot group  
-- No dependency on USB  
+**Exit:** Attested device gets ticket; unenrolled/expired denied; discovery JSON reflects ticket freshness.
 
 ---
 
-## 5. Phase 1b — Workload MS CA intermediate
+## 5. Phase M2 — Tenant plug-in (REQ-M*)
 
-### 5.1 PKI (AD CS / enterprise)
+File and complete **REQ-M01–M10** (see ENTRA_REQUESTS.md):
 
-- Create **Workload** intermediate + template  
-- SCEP/EST or automation endpoint for AWX  
-- Separate from user CBA templates  
+1. Intune Linux enroll + licenses  
+2. Built-in + custom compliance (upload artifacts)  
+3. CA **require compliant device** (report-only → on)  
+4. Break-glass exclusions  
 
-### 5.2 Roles
-
-- `workload_ca_trust`, `workload_certs`, `systemd_hardening`  
-- Migrate 1–2 agents off static tokens  
-
-### 5.3 Exit criteria
-
-- Renewed certs < 45d lifetime working  
-- status.json reflects workload cert health  
-- Documented service account reduction for those agents  
+**Exit:** Pilot Linux hosts show **Compliant**; pilot app CA grants/denies on that bit.
 
 ---
 
-## 6. Phase 2 — SPIRE
+## 6. Future phases (summary)
 
-### 6.1 Infra
+| Phase | Work | REQs |
+|-------|------|------|
+| **F1** | TPM CBA or FIDO; no USB daily UX | REQ-F01–F08 |
+| **F2** | AWX ZT packs, continuous enforce | — |
+| **F3** | Workload certs, optional SPIRE, federation | REQ-F10 |
 
-- SPIRE Server HA + Postgres  
-- Trust domain name approved  
-- UpstreamAuthority → workload intermediate **or** nested SPIRE root under enterprise PKI  
-- Deploy via AWX from **zt-spire-config**  
-
-### 6.2 Agents
-
-- Servers / k8s nodes first  
-- Workload registration policies for selected systemd units  
-- mTLS between two pilot services  
-
-### 6.3 Exit criteria
-
-- SVID issue/rotate; mTLS verified; runbooks for break-glass  
+Details: [tpm-cba-no-usb.md](../runbooks/tpm-cba-no-usb.md), [workload-certs-ms-ca.md](../runbooks/workload-certs-ms-ca.md), [spiffe-spire.md](../runbooks/spiffe-spire.md).
 
 ---
 
-## 7. Phase 3 — Federation & GA
+## 7. Repo map
 
-- REQ-E15 workload identity federation  
-- Expand CA to broader Linux groups  
-- Workstation SPIRE agents only if justified  
-- GA checklist from [linux-zero-trust-entra.md](../runbooks/linux-zero-trust-entra.md) success criteria  
+See [dependencies-and-repos.md](dependencies-and-repos.md) and [../architecture/REPO-BOUNDARIES.md](../architecture/REPO-BOUNDARIES.md).
 
 ---
 
-## 8. Workstream map
-
-| Workstream | Lead skill | Phases |
-|------------|------------|--------|
-| W1 AWX platform | Platform / SRE | 0 |
-| W2 Goldimage integration | Linux admin | 0–1 |
-| W3 Intune + compliance | Endpoint / Intune | 1 |
-| W4 TPM-CBA + PKI user | IAM + Linux | 1 |
-| W5 Workload PKI | PKI + Linux | 1b |
-| W6 SPIRE | Platform / security eng | 2–3 |
-| W7 Entra requests | IAM (Linux drafts) | 0–3 |
-| W8 Security validation | SecOps | 1–3 |
-
----
-
-## 9. Risk register (summary)
+## 8. Risks
 
 | Risk | Mitigation |
 |------|------------|
-| Entra request latency | Parallelize REQ drafts early; pilot groups only |
-| CBA CRL not reachable | REQ-E17; test revoke |
-| TPM model diversity | Hardware allowlist for pilot |
-| AWX as SPOF | Backups, restore drill, local break-glass admin access |
-| SPIRE scope creep | Phase gate: no SPIRE on VDI fleet until Phase 2 exit |
-| Hybrid UID/GID regressions | sssd-hybrid owned tests before policy packs touch auth |
+| IAM delay on REQ-M* | Lab + mock Intune continues; no idle engineering |
+| Custom compliance forgeable | Attestor-backed tickets; short TTL |
+| Scope creep into CBA | Keep CBA in F1 only |
+| Lab code leaks into prod | Hard boundary: no `lab/` in AWX projects |
 
 ---
 
-## 10. Testing with limited Entra access
+## 9. Explicitly out of scope
 
-| We can do without Entra admin | Needs IAM |
-|------------------------------|-----------|
-| AWX, goldimage, agents, status.json | CBA enable, CA policies |
-| TPM keygen, CSR, **lab CA** | Production CA chain upload to Entra |
-| Intune enrollment as licensed user | Tenant-wide compliance assignment |
-| Graph read if app granted | App registration + admin consent |
-
-Lab path: stand up **lab enterprise CA** or use existing **non-prod** PKI for CSR practice; production Entra trust only after REQ-E02.
-
----
-
-## 11. Definition of Done (program)
-
-- [ ] Pilot + GA success criteria (master runbook §8)  
-- [ ] All P0/P1 Jira stories Done  
-- [ ] GitLab issues closed with links  
-- [ ] Ops runbooks handed to support  
-- [ ] Cost actuals vs estimate recorded  
+- Linux Autopilot / OA3  
+- Parallel IdP for M365  
+- Replacing SSSD OIDC  
+- Keycloak / IdM as Entra substitutes for device CA  
