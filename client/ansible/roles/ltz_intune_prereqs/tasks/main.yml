@@ -1,0 +1,79 @@
+---
+# Intune Linux enrollment prerequisites:
+# - Microsoft Edge
+# - Microsoft Intune app (intune-portal)
+# - Microsoft Identity Broker
+# - Optional GNOME desktop (required by Intune on Linux)
+# Docs: https://learn.microsoft.com/en-us/intune/user-help/enrollment/enroll-linux
+
+- name: Baseline OS packages
+  ansible.builtin.apt:
+    name: "{{ ltz_intune_base_packages }}"
+    state: present
+    update_cache: true
+
+- name: Ensure keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Install Microsoft package signing key
+  ansible.builtin.get_url:
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    dest: /etc/apt/keyrings/microsoft.asc
+    mode: "0644"
+    force: true
+
+- name: Microsoft prod apt source (Intune / identity broker)
+  ansible.builtin.copy:
+    dest: "{{ ltz_microsoft_prod_list }}"
+    mode: "0644"
+    content: |
+      deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.asc] https://packages.microsoft.com/ubuntu/{{ ansible_distribution_version }}/prod {{ ansible_distribution_release }} main
+
+- name: Microsoft Edge apt source
+  ansible.builtin.copy:
+    dest: "{{ ltz_microsoft_edge_list }}"
+    mode: "0644"
+    content: |
+      deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.asc] https://packages.microsoft.com/repos/edge stable main
+
+- name: Install GNOME desktop for Intune (required on Linux)
+  ansible.builtin.apt:
+    name: "{{ ltz_intune_desktop_packages }}"
+    state: present
+    update_cache: true
+  when: ltz_intune_install_desktop | bool
+
+- name: Enable graphical target when desktop installed
+  ansible.builtin.file:
+    src: /usr/lib/systemd/system/graphical.target
+    dest: /etc/systemd/system/default.target
+    state: link
+    force: true
+  when: ltz_intune_install_desktop | bool
+
+- name: Ensure qemu-guest-agent running
+  ansible.builtin.systemd:
+    name: qemu-guest-agent
+    state: started
+    enabled: true
+  failed_when: false
+  when: ltz_intune_install_desktop | bool
+
+- name: Install Microsoft Edge + Intune portal + identity broker
+  ansible.builtin.apt:
+    name: "{{ ltz_microsoft_packages }}"
+    state: present
+    update_cache: true
+
+- name: Verify enrollment binaries present
+  ansible.builtin.command: "dpkg-query -W -f='${Package} ${Version}\n' {{ item }}"
+  register: ltz_intune_pkg_check
+  changed_when: false
+  loop: "{{ ltz_microsoft_packages }}"
+
+- name: Show installed Intune stack versions
+  ansible.builtin.debug:
+    msg: "{{ ltz_intune_pkg_check.results | map(attribute='stdout') | list }}"

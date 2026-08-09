@@ -31,6 +31,15 @@
 | [Workload MS CA](runbooks/workload-certs-ms-ca.md) | Future workload |
 | [SPIFFE/SPIRE](runbooks/spiffe-spire.md) | Future workload fabric |
 
+## Deployment (lab → Microsoft)
+
+| Document | Purpose |
+|----------|---------|
+| [deployment/README.md](deployment/README.md) | Transition model: one Ansible, one vars surface |
+| [Lab trust proof](deployment/lab-trust-proof.md) | Air-gap evidence + plane mapping |
+| [Microsoft path](deployment/microsoft-path.md) | Same bootstrap on real/dev hosts |
+| [Entra / Azure checklist](deployment/entra-azure-checklist.md) | Portal work for MVP device path |
+
 ## Implementation
 
 | Document | Purpose |

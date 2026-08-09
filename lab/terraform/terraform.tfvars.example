@@ -1,10 +1,13 @@
-proxmox_endpoint     = "https://192.168.1.10:8006/"
-proxmox_api_token    = "terraform@pam!ltz=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+# Node name is `hostname` on the PVE host (e.g. beelink), not always "pve".
+proxmox_endpoint     = "https://10.42.0.187:8006/"
+proxmox_api_token    = "root@pam!ltz=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 proxmox_insecure     = true
-proxmox_node         = "pve"
+proxmox_node         = "beelink"
 proxmox_ssh_username = "root"
 template_vm_id       = 9000
+# disks + cloud-init drive (must support content-type images)
 datastore_id         = "local-lvm"
+# user-data YAML snippets only (enable: pvesm set local --content ...,snippets)
 snippet_datastore_id = "local"
 bridge               = "vmbr0"
 ssh_public_key       = "ssh-ed25519 AAAA... your-key"

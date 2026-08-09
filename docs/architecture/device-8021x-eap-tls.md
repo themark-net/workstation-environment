@@ -29,13 +29,36 @@ Corporate wired/wireless must authenticate the **host** with a **device certific
 ## 3. Target flow
 
 ```text
-enroll → attest (thin attestor) → device client cert (short TTL)
-       → wpa_supplicant / NetworkManager EAP-TLS
-       → RADIUS validates chain + (optional) inventory/CRL
+enroll → attest (thin attestor) → short-lived ticket
+       → CSR + ticket → cert mint (verifies ticket) → device client cert (short TTL)
+       → wpa_supplicant / eapol_test / NetworkManager EAP-TLS
+       → RADIUS validates X.509 chain to device CA (+ optional inventory/CRL)
        → full VLAN | deny / quarantine VLAN if no valid cert
 ```
 
-Fail closed: no successful attest → no renew → cert expires → network drops or quarantine.
+**Important trust split (not “attestor in the CA chain”):**
+
+| Credential | Who trusts it | Role |
+|------------|---------------|------|
+| Attestor **ticket** (HMAC / MAA-backed) | Cert mint, collector, Intune discovery | “Posture OK right now” |
+| Device **client certificate** | RADIUS / mTLS services | “This host is who it claims on the wire” |
+| CA root/intermediate | RADIUS trust store | X.509 path validation |
+
+The attestor is a **gate to issuance**, not an X.509 issuer in the EAP-TLS chain (unless you deliberately use the same org CA for both — still separate *uses*: ticket vs clientAuth cert).
+
+Fail closed: no successful attest → no cert mint/renew → cert expires → network drops or quarantine.
+
+### Lab implementation
+
+```bash
+cd lab
+make ansible-mvp      # attestor + agents
+make ansible-8021x    # step-ca + cert-mint + FreeRADIUS + device certs + eapol_test
+```
+
+- CA + mint: `lab_ca` (`ltz-cert-mint` on :8445)  
+- RADIUS: `lab_rp`  
+- Clients: `ltz_device_cert` role → `/var/lib/ltz-trust/pki/`
 
 ---
 

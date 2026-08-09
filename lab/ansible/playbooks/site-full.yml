@@ -1,0 +1,18 @@
+---
+# Full lab path in one entrypoint:
+#   bootstrap OS → MVP dual-path trust → 802.1X (CA + RADIUS + device certs)
+#
+#   make ansible-site-full
+#
+# Equivalent to: ansible-bootstrap && ansible-mvp && ansible-8021x
+# Client host roles are the same roles used on real/Microsoft hosts
+# (ltz_intune_prereqs, ltz_trust_agent, ltz_device_cert) with lab inventory URLs.
+
+- name: Import OS bootstrap
+  ansible.builtin.import_playbook: bootstrap.yml
+
+- name: Import MVP (attestor + dual host paths)
+  ansible.builtin.import_playbook: mvp.yml
+
+- name: Import 802.1X (CA + RADIUS + device certs + eapol)
+  ansible.builtin.import_playbook: network-8021x.yml

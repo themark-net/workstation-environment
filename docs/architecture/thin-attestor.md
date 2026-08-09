@@ -1,7 +1,7 @@
-# Thin Attestor (MVP Device Trust)
+# Thin Attestor (Device Trust)
 
-**Status:** MVP critical component  
-**Last updated:** 2026-08-07
+**Status:** Strengthened MVP — challenge/response + pluggable backends  
+**Last updated:** 2026-08-09
 
 ---
 
@@ -9,61 +9,108 @@
 
 Remote service that:
 
-1. Accepts **device evidence** (TPM/vTPM quote and/or signed health bundle).  
-2. Evaluates **policy** (device enrolled, evidence fresh, required claims).  
-3. On success, mints a **short-lived device ticket or client certificate**.  
-4. On failure, returns deny — no credential.
+1. Issues a **challenge** (nonce) bound to an enrolled device.  
+2. Accepts **evidence** that binds that nonce (HMAC; optional TPM quote metadata).  
+3. Verifies evidence via a **pluggable backend** (`local` or `maa`).  
+4. On success, mints a **short-lived ticket**.  
+5. On failure, returns deny — no credential.
 
-Downstream compliance agent and relying parties **trust the attestor**, not raw local `status.json` alone.
+Downstream agents and Intune discovery trust **tickets / status derived from tickets**, not raw unauthenticated local claims.
 
----
-
-## 2. MVP policy (lab-default)
-
-| Check | MVP |
-|-------|-----|
-| Device id registered (birth record) | Required |
-| Evidence timestamp / nonce freshness | Required |
-| TPM/vTPM present (or lab soft-key mode flag) | Required in strict mode |
-| Optional PCR allowlist | Future / optional |
-| MAA JWT verification | Future optional backend |
+**Clients never call MAA.** They only call this attestor. Swapping backends is a **server deploy** change.
 
 ---
 
-## 3. Interfaces
+## 2. Stable client contract (v2)
 
 ```text
-POST /v1/attest
-  body: { device_id, evidence, nonce }
-  → 200 { ticket, expires_at } | 403
+POST /v1/enroll
+  { device_id, join_token, meta? }
+  → 201 { device_id, device_secret, status }   # store device_secret 0600
 
-POST /v1/enroll  (lab; prod may be Intune-only for device object)
-  body: { device_id, pubkey, join_token }
-  → 201 birth record
+POST /v1/challenge
+  { device_id }
+  → 200 { challenge_id, nonce, expires_at }
+
+POST /v1/attest
+  { device_id, challenge_id, evidence }
+  → 200 { ticket, expires_at, backend, verification }
+
+POST /v1/verify_ticket
+  { ticket } → { valid, device_id }
+
+GET  /healthz  → { status, backend }
+GET  /v1/meta  → capability advertisement
 ```
 
-Ticket is presented by the agent to **collector** and optionally used as TLS client cert material depending on deployment mode.
+### Evidence (`hmac_v1`)
 
-**Network (802.1X):** The same successful attest can authorize minting/renewal of a **device client certificate** for EAP-TLS (machine auth). RADIUS trusts the device CA chain. User CBA certificates must not be used for 802.1X. See [device-8021x-eap-tls.md](device-8021x-eap-tls.md).
+```text
+proof_hmac = HMAC-SHA256(device_secret,
+  "ltz-evidence-v1|{device_id}|{challenge_id}|{nonce}|{ts}|{0|1}|{hostname}")
+```
+
+Fields: `scheme`, `challenge_id`, `nonce`, `ts`, `tpm_present`, `hostname`, `proof_hmac`, optional `tpm_quote`.
+
+Agent implementation: `client/agent/ltz-trust-agent.sh` (copied into Ansible role files).
 
 ---
 
-## 4. Code locations
+## 3. Backends (server-side only)
+
+| `LTZ_ATTESTOR_BACKEND` | Behavior |
+|------------------------|----------|
+| **`local`** (default) | Challenge nonce + device HMAC; optional quote nonce binding; STRICT_TPM for presence |
+| **`maa`** | Plug-in for Microsoft Azure Attestation (needs Azure subscription + endpoint/token — **not** in M365 E3) |
+
+Code: `services/attestor/backends/{local,maa,base}.py`.
+
+### Enabling MAA later
+
+1. Create Azure Attestation provider + obtain API auth.  
+2. Set on attestor host:
+   ```bash
+   LTZ_ATTESTOR_BACKEND=maa
+   LTZ_MAA_ENDPOINT=https://<provider>.<region>.attest.azure.net
+   LTZ_MAA_BEARER_TOKEN=...
+   # optional hybrid: LTZ_MAA_ALSO_LOCAL=1
+   ```
+3. Complete `backends/maa.py` JWT/JWKS validation (stub documents the hook).  
+4. **Do not change agents** if evidence envelope stays the same (or add `maa_token` field later).
+
+---
+
+## 4. Policy (lab defaults)
+
+| Check | local backend |
+|-------|----------------|
+| Device enrolled + `device_secret` | Required |
+| Challenge unexpired + nonce match | Required |
+| Evidence HMAC | Required (`LTZ_ATTESTOR_REQUIRE_HMAC=1`) |
+| Timestamp skew | ≤ 600s |
+| TPM present | If `LTZ_ATTESTOR_STRICT_TPM=1` |
+| Full AK quote crypto | Optional / next hardening |
+
+---
+
+## 5. Code locations
 
 | Piece | Path |
 |-------|------|
-| Service (standalone) | [services/attestor/](../../services/attestor/) |
-| Host client | [client/attestor-client/](../../client/attestor-client/) |
-| Lab deploy of service | [lab/ansible/roles/lab_attestor/](../../lab/ansible/roles/lab_attestor/) |
+| Service | `services/attestor/` |
+| Backends | `services/attestor/backends/` |
+| Agent | `client/agent/ltz-trust-agent.sh` |
+| Lab deploy | `lab/ansible/roles/lab_attestor/` |
 
 ---
 
-## 5. Prod swap
+## 6. Trust narrative
 
-| Lab | Production |
-|-----|------------|
-| step-ca / file CA | Enterprise MS CA or internal cert API |
-| In-memory device registry | DB + inventory allowlist |
-| Optional soft evidence | Discrete TPM quotes; optional MAA |
+```text
+Device ──challenge/evidence──► Thin Attestor ──verify──► backend (local | MAA)
+                                      │
+                                      └── ticket ──► agent status.json ──► Intune discovery
+                                                      collector / RP
+```
 
-Client and service **config** change; **protocol** stays stable.
+Intune custom compliance remains a **presentation channel**. Root of trust is the attestor ticket after backend verification.

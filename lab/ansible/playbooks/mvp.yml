@@ -1,5 +1,12 @@
 ---
-# Lab automation: MVP device-trust path only (no CBA, no SPIRE).
+# Lab automation: dual-path device trust MVP
+#
+# 1) Workstation path: GNOME + Edge + Intune portal + attestor agent
+#    → human Intune enroll at console; custom compliance reads status.json
+# 2) Server path: headless attestor enroll + agent only (no Intune GUI stack)
+#    → proves same ticket/status model without MDM
+#
+# Shared control plane: thin attestor + collector on lab_rp.
 
 - name: Deploy attestor on lab_rp
   hosts: lab_rp
@@ -22,10 +29,11 @@
         dest: /opt/ltz-collector/
     - name: venv
       ansible.builtin.shell: |
-        set -e
+        set -euo pipefail
         python3 -m venv /opt/ltz-collector/.venv
         /opt/ltz-collector/.venv/bin/pip install -r /opt/ltz-collector/requirements.txt
       args:
+        executable: /bin/bash
         creates: /opt/ltz-collector/.venv/bin/python
     - name: Unit
       ansible.builtin.copy:
@@ -50,19 +58,63 @@
         state: restarted
         daemon_reload: true
 
-- name: Enroll + install production client on workstations
+    - name: Wait for attestor health
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8443/healthz
+        status_code: 200
+      register: attestor_health
+      retries: 15
+      delay: 2
+      until: attestor_health.status == 200
+
+- name: "Path A — Workstation (GUI / Intune-ready + attestor)"
   hosts: lab_workstations
+  become: true
+  vars:
+    # Resolved once; pass concrete values into roles (avoid {{ var: {{ var }} }} loops)
+    _rp: "{{ hostvars[groups['lab_rp'][0]].ansible_host }}"
+    ltz_attestor_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443"
+    ltz_collector_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8089"
+  pre_tasks:
+    - name: Class marker
+      ansible.builtin.copy:
+        dest: /etc/ltz-host-class
+        mode: "0644"
+        content: |
+          workstation
+    - name: Enroll device with thin attestor
+      ansible.builtin.include_role:
+        name: lab_enroll
+  roles:
+    - role: ltz_intune_prereqs
+      vars:
+        ltz_intune_install_desktop: true
+    - role: ltz_trust_agent
+      vars:
+        ltz_attestor_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443"
+        ltz_collector_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8089"
+        # ltz_strict_tpm comes from inventory host vars (true on ws1)
+
+- name: "Path B — Server (headless attestor only)"
+  hosts: lab_servers
   become: true
   vars:
     ltz_attestor_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443"
     ltz_collector_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8089"
-    ltz_join_token: lab-join
   pre_tasks:
-    - name: Enroll device
+    - name: Class marker
+      ansible.builtin.copy:
+        dest: /etc/ltz-host-class
+        mode: "0644"
+        content: |
+          server
+    - name: Enroll device with thin attestor
       ansible.builtin.include_role:
         name: lab_enroll
   roles:
+    # Explicitly no desktop / Intune packages on server path.
     - role: ltz_trust_agent
       vars:
-        ltz_attestor_url: "{{ ltz_attestor_url }}"
-        ltz_collector_url: "{{ ltz_collector_url }}"
+        ltz_attestor_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443"
+        ltz_collector_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8089"
+        # ltz_strict_tpm from inventory (false on svc-a/b — no vTPM)

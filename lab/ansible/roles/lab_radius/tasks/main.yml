@@ -1,0 +1,229 @@
+---
+# FreeRADIUS EAP-TLS lab server.
+# - Trusts lab step-ca (intermediate+root) for *client* device certs
+# - Presents CA-signed *server* cert so eapol_test ca_cert verifies the peer
+# Attestor tickets are NOT in this trust path.
+
+- name: Install FreeRADIUS
+  ansible.builtin.apt:
+    name:
+      - freeradius
+      - freeradius-utils
+      - freeradius-config
+    state: present
+    update_cache: true
+
+- name: Ensure raddb dirs
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0750"
+    owner: freerad
+    group: freerad
+  loop:
+    - /etc/freeradius/3.0/certs
+    - /etc/freeradius/3.0/sites-enabled
+
+- name: Require CA-signed RADIUS material from lab_ca export
+  ansible.builtin.stat:
+    path: "{{ playbook_dir }}/../../artifacts/{{ item }}"
+  register: radius_artifacts
+  loop:
+    - root_ca.crt
+    - intermediate_ca.crt
+    - lab-ca-bundle.pem
+    - radius-server.crt
+    - radius-server.key
+  delegate_to: localhost
+  become: false
+
+- name: Fail clearly if 802.1X CA export missing
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: >-
+      Missing {{ item.item }} under lab/artifacts/. Run lab_ca role first
+      (make ansible-8021x) so step-ca exports CA-signed RADIUS material.
+  loop: "{{ radius_artifacts.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Install lab root CA
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../artifacts/root_ca.crt"
+    dest: /etc/freeradius/3.0/certs/ltz-lab-root.crt
+    mode: "0644"
+    owner: freerad
+    group: freerad
+
+- name: Install lab intermediate CA
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../artifacts/intermediate_ca.crt"
+    dest: /etc/freeradius/3.0/certs/ltz-lab-intermediate.crt
+    mode: "0644"
+    owner: freerad
+    group: freerad
+
+- name: Install client-trust CA bundle (intermediate + root)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../artifacts/lab-ca-bundle.pem"
+    dest: /etc/freeradius/3.0/certs/ca.pem
+    mode: "0644"
+    owner: freerad
+    group: freerad
+
+- name: Install CA-signed RADIUS server certificate
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../artifacts/radius-server.crt"
+    dest: /etc/freeradius/3.0/certs/server.crt
+    mode: "0644"
+    owner: freerad
+    group: freerad
+
+- name: Install RADIUS server private key
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../artifacts/radius-server.key"
+    dest: /etc/freeradius/3.0/certs/server.key
+    mode: "0640"
+    owner: freerad
+    group: freerad
+
+- name: Build server.pem (cert + key) for FreeRADIUS helpers
+  ansible.builtin.shell: |
+    set -euo pipefail
+    cd /etc/freeradius/3.0/certs
+    cat server.crt server.key > server.pem
+    chown freerad:freerad server.pem
+    chmod 640 server.pem
+  args:
+    executable: /bin/bash
+
+- name: clients.conf — allow lab subnet
+  ansible.builtin.copy:
+    dest: /etc/freeradius/3.0/clients.conf
+    mode: "0640"
+    owner: freerad
+    group: freerad
+    content: |
+      client localhost {
+        ipaddr = 127.0.0.1
+        secret = {{ radius_secret | default('labradius') }}
+        require_message_authenticator = no
+        nas_type = other
+      }
+      client lab_net {
+        ipaddr = {{ lab_radius_client_cidr | default('10.42.0.0/24') }}
+        secret = {{ radius_secret | default('labradius') }}
+        require_message_authenticator = no
+        nas_type = other
+      }
+
+- name: EAP module TLS paths (Debian uses ${certdir}; force absolute lab paths)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    EAP=/etc/freeradius/3.0/mods-available/eap
+    python3 - <<'PY'
+    from pathlib import Path
+    import re
+    p = Path("/etc/freeradius/3.0/mods-available/eap")
+    t = p.read_text()
+    # Absolute paths so lab material is never confused with snakeoil / Makefile defaults
+    replacements = [
+        (r'(?m)^(\s*)private_key_file\s*=\s*.*$',
+         r'\1private_key_file = /etc/freeradius/3.0/certs/server.key'),
+        (r'(?m)^(\s*)certificate_file\s*=\s*.*$',
+         r'\1certificate_file = /etc/freeradius/3.0/certs/server.crt'),
+        (r'(?m)^(\s*)ca_file\s*=\s*.*$',
+         r'\1ca_file = /etc/freeradius/3.0/certs/ca.pem'),
+    ]
+    for pat, repl in replacements:
+        t, n = re.subn(pat, repl, t, count=1)
+        # Also replace second occurrences inside tls-config tls-common if present
+        t = re.sub(pat, repl, t)
+    # Prefer EAP-TLS as default
+    t = re.sub(r'default_eap_type\s*=\s*md5', 'default_eap_type = tls', t, count=1)
+    p.write_text(t)
+    print("eap tls paths set to lab CA-signed material")
+    PY
+  args:
+    executable: /bin/bash
+
+- name: Default site authorize — accept EAP
+  ansible.builtin.copy:
+    dest: /etc/freeradius/3.0/sites-available/ltz-eap
+    mode: "0644"
+    owner: freerad
+    group: freerad
+    content: |
+      server ltz-eap {
+        listen {
+          type = auth
+          ipaddr = *
+          port = 0
+        }
+        listen {
+          type = acct
+          ipaddr = *
+          port = 0
+        }
+        authorize {
+          filter_username
+          preprocess
+          eap {
+            ok = return
+          }
+        }
+        authenticate {
+          Auth-Type eap {
+            eap
+          }
+          eap
+        }
+        preacct {
+          preprocess
+        }
+        accounting {
+          detail
+        }
+        session {
+        }
+        post-auth {
+          Post-Auth-Type REJECT {
+            attr_filter.access_reject
+          }
+        }
+      }
+
+- name: Enable ltz-eap site
+  ansible.builtin.file:
+    src: /etc/freeradius/3.0/sites-available/ltz-eap
+    dest: /etc/freeradius/3.0/sites-enabled/ltz-eap
+    state: link
+    force: true
+
+- name: Disable default site if present (avoid conflict)
+  ansible.builtin.file:
+    path: /etc/freeradius/3.0/sites-enabled/default
+    state: absent
+  failed_when: false
+
+- name: Restart FreeRADIUS
+  ansible.builtin.systemd:
+    name: freeradius
+    state: restarted
+    enabled: true
+    daemon_reload: true
+
+- name: Smoke — freeradius service active (UDP 1812)
+  ansible.builtin.command: systemctl is-active freeradius
+  register: fr_active
+  changed_when: false
+  failed_when: fr_active.stdout | trim != "active"
+
+- name: Smoke — server cert chains to lab CA
+  ansible.builtin.command: >
+    openssl verify -CAfile /etc/freeradius/3.0/certs/ca.pem
+    /etc/freeradius/3.0/certs/server.crt
+  register: srv_verify
+  changed_when: false
+  failed_when: "'OK' not in srv_verify.stdout"

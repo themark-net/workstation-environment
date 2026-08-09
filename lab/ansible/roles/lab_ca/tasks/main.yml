@@ -1,7 +1,10 @@
 ---
-- name: Install step-ca dependencies
+# Lab device CA (step-ca) + ticket-gated CSR signer for 802.1X client certs.
+# Trust model: RADIUS trusts THIS CA. Attestor tickets only authorize minting.
+
+- name: CA packages
   ansible.builtin.apt:
-    name: [curl, tar, jq]
+    name: [curl, tar, jq, openssl, python3, python3-pip, python3-venv, ca-certificates]
     state: present
     update_cache: true
 
@@ -10,82 +13,130 @@
     path: "{{ item }}"
     state: directory
     mode: "0750"
+    owner: root
+    group: root
   loop:
     - /etc/step-ca
+    - /etc/step-ca/config
+    - /etc/step-ca/certs
+    - /etc/step-ca/secrets
     - /var/lib/step-ca
     - /var/log/step-ca
+    - /opt/ltz-cert-mint
+    - /var/lib/ltz-ca-export
 
-- name: Download step CLI and step-ca (fixed version)
+- name: Stage step archives on target (from controller cache when present)
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+  loop:
+    - { src: "{{ playbook_dir }}/../../artifacts/step.tgz", dest: /tmp/step.tgz }
+    - { src: "{{ playbook_dir }}/../../artifacts/step-ca.tgz", dest: /tmp/step-ca.tgz }
+  when: item.src is file
+  ignore_errors: true
+
+- name: Download step CLI if not staged
   ansible.builtin.get_url:
     url: "https://dl.smallstep.com/gh-release/cli/gh-release-header/v0.28.2/step_linux_0.28.2_amd64.tar.gz"
     dest: /tmp/step.tgz
     mode: "0644"
+  when: not ansible_check_mode
 
-- name: Download step-ca binary archive
+- name: Download step-ca if not staged
   ansible.builtin.get_url:
     url: "https://dl.smallstep.com/gh-release/certificates/gh-release-header/v0.28.1/step-ca_linux_0.28.1_amd64.tar.gz"
     dest: /tmp/step-ca.tgz
     mode: "0644"
+  when: not ansible_check_mode
 
-- name: Extract step
-  ansible.builtin.unarchive:
-    src: /tmp/step.tgz
-    dest: /tmp
-    remote_src: true
-
-- name: Extract step-ca
-  ansible.builtin.unarchive:
-    src: /tmp/step-ca.tgz
-    dest: /tmp
-    remote_src: true
-
-- name: Install binaries
-  ansible.builtin.copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    mode: "0755"
-    remote_src: true
-  loop:
-    - { src: "/tmp/step_0.28.2/bin/step", dest: "/usr/local/bin/step" }
-    - { src: "/tmp/step-ca_0.28.1/bin/step-ca", dest: "/usr/local/bin/step-ca" }
-  # paths inside tarball may vary; fallback shell if needed
+- name: Extract step tools
+  ansible.builtin.shell: |
+    set -euo pipefail
+    tar -xzf /tmp/step.tgz -C /tmp
+    tar -xzf /tmp/step-ca.tgz -C /tmp
+    STEP_BIN=$(find /tmp -type f -name step -path '*/bin/*' | head -1)
+    CA_BIN=$(find /tmp -type f -name step-ca | head -1)
+    test -n "$STEP_BIN" && test -n "$CA_BIN"
+    install -m 0755 "$STEP_BIN" /usr/local/bin/step
+    install -m 0755 "$CA_BIN" /usr/local/bin/step-ca
+    step version
+    step-ca version
+  args:
+    executable: /bin/bash
+    creates: /usr/local/bin/step-ca
 
 - name: Password file
   ansible.builtin.copy:
-    content: "{{ step_ca_password }}"
+    content: "{{ step_ca_password | default('lab-only-change-me') }}\n"
     dest: /etc/step-ca/password.txt
     mode: "0600"
 
-- name: Init CA if missing
+- name: Init step-ca if missing
   ansible.builtin.shell: |
     set -euo pipefail
+    export STEPPATH=/etc/step-ca
     if [ ! -f /etc/step-ca/config/ca.json ]; then
+      rm -rf /root/.step
       step ca init \
-        --name "LTZ Lab CA" \
-        --dns "{{ inventory_hostname }},{{ lab_ca_dns | default(inventory_hostname) }},localhost" \
-        --address ":{{ step_ca_port }}" \
-        --provisioner "{{ step_ca_provisioner }}" \
-        --password-file /etc/step-ca/password.txt \
-        --deployment-type standalone
-      # step ca init writes under ~/.step by default for root — relocate
-      mkdir -p /etc/step-ca/config /etc/step-ca/certs /etc/step-ca/secrets
-      cp -a /root/.step/config/* /etc/step-ca/config/ || true
-      cp -a /root/.step/certs/* /etc/step-ca/certs/ || true
-      cp -a /root/.step/secrets/* /etc/step-ca/secrets/ || true
+        --name="LTZ Lab Device CA" \
+        --dns="{{ ansible_host }},{{ inventory_hostname }},ltz-lab-ca.ltz.lab,localhost" \
+        --address="0.0.0.0:{{ step_ca_port | default(8443) }}" \
+        --provisioner="{{ step_ca_provisioner }}" \
+        --password-file=/etc/step-ca/password.txt \
+        --deployment-type=standalone \
+        --provisioner-password-file=/etc/step-ca/password.txt
+      if [ ! -f /etc/step-ca/config/ca.json ] && [ -f /root/.step/config/ca.json ]; then
+        cp -a /root/.step/config /etc/step-ca/
+        cp -a /root/.step/certs /etc/step-ca/
+        cp -a /root/.step/secrets /etc/step-ca/
+      fi
+      sed -i 's/"address": "[^"]*"/"address": "0.0.0.0:{{ step_ca_port | default(8443) }}"/' /etc/step-ca/config/ca.json || true
     fi
+    test -f /etc/step-ca/config/ca.json
+    test -f /etc/step-ca/certs/root_ca.crt
+    test -f /etc/step-ca/certs/intermediate_ca.crt
   args:
     executable: /bin/bash
 
-- name: systemd unit for step-ca
+- name: Allow longer lab cert TTLs (device short-lived; RADIUS server up to 1y)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    # Default step-ca max is ~24h; RADIUS server certs need longer in lab.
+    python3 - <<'PY'
+    import json
+    from pathlib import Path
+    p = Path("/etc/step-ca/config/ca.json")
+    data = json.loads(p.read_text())
+    # authority claims
+    auth = data.setdefault("authority", {})
+    auth["claims"] = {
+        "minTLSCertDuration": "5m",
+        "maxTLSCertDuration": "8760h",
+        "defaultTLSCertDuration": "24h",
+    }
+    # per-provisioner claims if present
+    for prov in auth.get("provisioners", []) or []:
+        claims = prov.setdefault("claims", {})
+        claims["maxTLSCertDuration"] = "8760h"
+        claims["defaultTLSCertDuration"] = claims.get("defaultTLSCertDuration", "24h")
+    p.write_text(json.dumps(data, indent=2) + "\n")
+    print("ca.json claims updated for lab durations")
+    PY
+  args:
+    executable: /bin/bash
+
+- name: step-ca systemd unit
   ansible.builtin.copy:
     dest: /etc/systemd/system/step-ca.service
     mode: "0644"
     content: |
       [Unit]
-      Description=LTZ Lab step-ca
+      Description=LTZ Lab step-ca (device PKI)
       After=network.target
       [Service]
       Type=simple
+      Environment=STEPPATH=/etc/step-ca
       ExecStart=/usr/local/bin/step-ca /etc/step-ca/config/ca.json --password-file /etc/step-ca/password.txt
       Restart=on-failure
       LimitNOFILE=65536
@@ -96,12 +147,164 @@
   ansible.builtin.systemd:
     name: step-ca
     enabled: true
-    state: started
+    state: restarted
     daemon_reload: true
 
-- name: Fetch root cert to controller artifacts
+- name: Wait for step-ca health
+  ansible.builtin.uri:
+    url: "https://127.0.0.1:{{ step_ca_port | default(8443) }}/health"
+    validate_certs: false
+    status_code: [200]
+  register: ca_health
+  retries: 20
+  delay: 2
+  until: ca_health.status | default(0) == 200
+
+- name: Build exportable CA trust material
+  ansible.builtin.shell: |
+    set -euo pipefail
+    # Bundle clients use to verify RADIUS *server* cert (issued by intermediate)
+    cat /etc/step-ca/certs/intermediate_ca.crt /etc/step-ca/certs/root_ca.crt \
+      > /var/lib/ltz-ca-export/lab-ca-bundle.pem
+    # RADIUS ca_file: same chain validates *client* device certs
+    cp /etc/step-ca/certs/root_ca.crt /var/lib/ltz-ca-export/root_ca.crt
+    cp /etc/step-ca/certs/intermediate_ca.crt /var/lib/ltz-ca-export/intermediate_ca.crt
+    chmod 0644 /var/lib/ltz-ca-export/*
+  args:
+    executable: /bin/bash
+
+- name: Export root CA to controller
   ansible.builtin.fetch:
-    src: /etc/step-ca/certs/root_ca.crt
-    dest: "{{ playbook_dir }}/../artifacts/root_ca.crt"
+    src: /var/lib/ltz-ca-export/root_ca.crt
+    dest: "{{ playbook_dir }}/../../artifacts/root_ca.crt"
     flat: true
-  failed_when: false
+
+- name: Export intermediate CA to controller
+  ansible.builtin.fetch:
+    src: /var/lib/ltz-ca-export/intermediate_ca.crt
+    dest: "{{ playbook_dir }}/../../artifacts/intermediate_ca.crt"
+    flat: true
+
+- name: Export CA bundle (intermediate+root) to controller
+  ansible.builtin.fetch:
+    src: /var/lib/ltz-ca-export/lab-ca-bundle.pem
+    dest: "{{ playbook_dir }}/../../artifacts/lab-ca-bundle.pem"
+    flat: true
+
+- name: Issue RADIUS server cert (CA-signed — required for EAP-TLS client verify)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    export STEPPATH=/etc/step-ca
+    RADIUS_IP="{{ hostvars[groups['lab_rp'][0]].ansible_host }}"
+    OUTDIR=/var/lib/ltz-ca-export
+    # Re-issue when missing or not signed by our intermediate
+    NEED=1
+    if [ -f "$OUTDIR/radius-server.crt" ]; then
+      if openssl verify -CAfile "$OUTDIR/lab-ca-bundle.pem" "$OUTDIR/radius-server.crt" >/dev/null 2>&1; then
+        NEED=0
+      fi
+    fi
+    if [ "$NEED" = "1" ]; then
+      rm -f "$OUTDIR/radius-server.crt" "$OUTDIR/radius-server.key"
+      # Use host IP in ca-url — CA leaf SAN is ansible_host, not 127.0.0.1
+      step ca certificate "ltz-lab-radius" \
+        "$OUTDIR/radius-server.crt" \
+        "$OUTDIR/radius-server.key" \
+        --san "$RADIUS_IP" \
+        --san ltz-lab-radius \
+        --san ltz-lab-rp \
+        --provisioner="{{ step_ca_provisioner }}" \
+        --provisioner-password-file=/etc/step-ca/password.txt \
+        --ca-url="https://{{ ansible_host }}:{{ step_ca_port | default(8443) }}" \
+        --root=/etc/step-ca/certs/root_ca.crt \
+        --not-after=8760h \
+        --force
+      chmod 0644 "$OUTDIR/radius-server.crt"
+      chmod 0600 "$OUTDIR/radius-server.key"
+    fi
+    openssl verify -CAfile "$OUTDIR/lab-ca-bundle.pem" "$OUTDIR/radius-server.crt"
+  args:
+    executable: /bin/bash
+
+- name: Export RADIUS server cert/key to controller
+  ansible.builtin.fetch:
+    src: "{{ item }}"
+    dest: "{{ playbook_dir }}/../../artifacts/{{ item | basename }}"
+    flat: true
+  loop:
+    - /var/lib/ltz-ca-export/radius-server.crt
+    - /var/lib/ltz-ca-export/radius-server.key
+
+- name: Install cert-mint app
+  ansible.builtin.copy:
+    src: cert_mint.py
+    dest: /opt/ltz-cert-mint/cert_mint.py
+    mode: "0644"
+
+- name: Cert-mint venv
+  ansible.builtin.shell: |
+    set -euo pipefail
+    python3 -m venv /opt/ltz-cert-mint/.venv
+    /opt/ltz-cert-mint/.venv/bin/pip install -q flask requests
+  args:
+    executable: /bin/bash
+    creates: /opt/ltz-cert-mint/.venv/bin/python
+
+- name: Cert-mint systemd unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-cert-mint.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ ticket-gated device cert mint
+      After=network.target step-ca.service ltz-attestor.service
+      Wants=step-ca.service
+      [Service]
+      Type=simple
+      Environment=PORT={{ cert_mint_port | default(8445) }}
+      Environment=LTZ_ATTESTOR_VERIFY_URL=http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443/v1/verify_ticket
+      Environment=STEP_CA_URL=https://{{ ansible_host }}:{{ step_ca_port | default(8443) }}
+      Environment=STEP_CA_FINGERPRINT={{ ca_fingerprint | default('') }}
+      Environment=STEP_PROVISIONER={{ step_ca_provisioner }}
+      Environment=STEP_PASSWORD_FILE=/etc/step-ca/password.txt
+      Environment=STEP_ROOT=/etc/step-ca/certs/root_ca.crt
+      Environment=STEPPATH=/etc/step-ca
+      WorkingDirectory=/opt/ltz-cert-mint
+      ExecStart=/opt/ltz-cert-mint/.venv/bin/python cert_mint.py
+      Restart=on-failure
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Compute CA fingerprint
+  ansible.builtin.shell: |
+    set -euo pipefail
+    step certificate fingerprint /etc/step-ca/certs/root_ca.crt
+  args:
+    executable: /bin/bash
+  register: fp
+  changed_when: false
+
+- name: Enable cert-mint with fingerprint
+  ansible.builtin.shell: |
+    set -euo pipefail
+    systemctl daemon-reload
+    mkdir -p /etc/systemd/system/ltz-cert-mint.service.d
+    cat > /etc/systemd/system/ltz-cert-mint.service.d/fingerprint.conf <<EOF
+    [Service]
+    Environment=STEP_CA_FINGERPRINT={{ fp.stdout | trim }}
+    Environment=LTZ_ATTESTOR_VERIFY_URL=http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443/v1/verify_ticket
+    EOF
+    systemctl daemon-reload
+    systemctl enable --now ltz-cert-mint
+    systemctl restart ltz-cert-mint
+  args:
+    executable: /bin/bash
+
+- name: Wait for cert-mint health
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ cert_mint_port | default(8445) }}/healthz"
+    status_code: [200]
+  register: mint_health
+  retries: 15
+  delay: 2
+  until: mint_health.status | default(0) == 200

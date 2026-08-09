@@ -12,3 +12,14 @@ docker/data/
 *.pem
 *.key
 !**/files/.gitkeep
+
+# CA / RADIUS material exported by ansible-8021x (lab secrets)
+artifacts/root_ca.crt
+artifacts/intermediate_ca.crt
+artifacts/lab-ca-bundle.pem
+artifacts/radius-server.crt
+artifacts/radius-server.key
+# Cached step/step-ca release tarballs (downloaded by lab_ca role)
+artifacts/step.tgz
+artifacts/step-ca.tgz
+artifacts/*.tgz

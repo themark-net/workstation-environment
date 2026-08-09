@@ -1,0 +1,44 @@
+# =============================================================================
+# Example: microsoft-dev / demo profile (same keys as ltz.yml.example)
+# Copy over lab values when pointing the *same* bootstrap-host playbook at
+# real or developer-tenant hosts with in-place Microsoft components.
+#
+#   cp vars/ltz-microsoft-dev.yml.example vars/ltz.yml
+#   # fill tenant_id, URLs, secrets
+#   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-host.yml
+# =============================================================================
+
+ltz_deployment_profile: "microsoft-dev"
+ltz_host_class: workstation
+
+# Point at your deployed attestor/collector (lab RP substitute or Azure VM)
+ltz_attestor_url: "https://attestor.example.com"
+ltz_collector_url: "https://collector.example.com"
+ltz_join_token: "CHANGE-ME"
+ltz_strict_tpm: true
+
+# Device cert mint: lab cert-mint API shape OR your Cloud PKI front door
+ltz_enable_device_cert: true
+ltz_cert_mint_url: "https://cert-mint.example.com"
+ltz_radius_host: "radius.example.com"
+ltz_radius_secret: "CHANGE-ME-vault"
+ltz_radius_ca_file: "/etc/ltz-trust/lab-ca-bundle.pem"  # install enterprise chain here
+
+ltz_install_intune_prereqs: true
+ltz_intune_install_desktop: true
+
+ltz_microsoft:
+  tenant_id: "00000000-0000-0000-0000-000000000000"
+  tenant_domain: "contoso.onmicrosoft.com"
+  pilot_group: "LTZ-Pilot"
+  pilot_user_upn: "pilot@contoso.onmicrosoft.com"
+  intune_compliance_script: "client/intune/discovery.sh"
+  intune_compliance_rules: "client/intune/rules.json"
+  conditional_access_require_compliant: false
+  cloud_pki_enabled: true
+  cloud_pki_mint_url: "https://cert-mint.example.com"
+  cloud_pki_issuing_ca_thumbprint: ""
+  maa_enabled: false   # set true + attestor backend=maa when E5/MAA available
+  maa_endpoint: ""
+  cba_enabled: false
+  graph_app_id: ""

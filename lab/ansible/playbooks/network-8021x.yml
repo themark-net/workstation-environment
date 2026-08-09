@@ -1,0 +1,111 @@
+---
+# Lab 802.1X (EAP-TLS) extension — same device trust plane as attestor.
+#
+# Trust model (important):
+#   - Attestor ticket  = short-lived proof of posture (HMAC/MAA backend)
+#   - Lab step-ca      = issues device *client certificates* + RADIUS *server* cert
+#   - Cert mint        = only signs CSR if ticket verifies
+#   - FreeRADIUS       = trusts lab CA (X.509), NOT the attestor ticket
+#   - User CBA / Cloud PKI = different plane (not this playbook)
+#
+# Prerequisites: make ansible-mvp (attestor + agents with tickets)
+#
+# One-shot:
+#   make ansible-8021x
+
+- name: Device CA + ticket-gated cert mint + RADIUS server cert export
+  hosts: lab_ca
+  become: true
+  roles:
+    - lab_ca
+
+- name: FreeRADIUS EAP-TLS (CA-signed server cert; trusts lab CA for clients)
+  hosts: lab_rp
+  become: true
+  vars:
+    # group_vars sets ltz_radius_secret; role uses radius_secret
+    radius_secret: labradius
+  roles:
+    - lab_radius
+
+- name: Distribute lab CA bundle to all device hosts
+  hosts: lab_workstations:lab_servers
+  become: true
+  tasks:
+    - name: Ensure /etc/ltz-trust
+      ansible.builtin.file:
+        path: /etc/ltz-trust
+        state: directory
+        mode: "0750"
+
+    - name: Install lab-ca-bundle.pem (intermediate + root)
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../artifacts/lab-ca-bundle.pem"
+        dest: /etc/ltz-trust/lab-ca-bundle.pem
+        mode: "0644"
+
+- name: Device certs on workstations (GUI path)
+  hosts: lab_workstations
+  become: true
+  pre_tasks:
+    - name: Ensure fresh attestor ticket
+      ansible.builtin.command: /usr/local/lib/ltz/ltz-trust-agent.sh
+      changed_when: true
+  roles:
+    - role: ltz_device_cert
+      vars:
+        ltz_attestor_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443"
+        ltz_cert_mint_url: "http://{{ hostvars[groups['lab_ca'][0]].ansible_host }}:8445"
+        ltz_radius_host: "{{ hostvars[groups['lab_rp'][0]].ansible_host }}"
+        ltz_radius_secret: labradius
+        ltz_radius_ca_file: /etc/ltz-trust/lab-ca-bundle.pem
+
+- name: Device certs on server path (headless)
+  hosts: lab_servers
+  become: true
+  pre_tasks:
+    - name: Ensure fresh attestor ticket
+      ansible.builtin.command: /usr/local/lib/ltz/ltz-trust-agent.sh
+      changed_when: true
+  roles:
+    - role: ltz_device_cert
+      vars:
+        ltz_attestor_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443"
+        ltz_cert_mint_url: "http://{{ hostvars[groups['lab_ca'][0]].ansible_host }}:8445"
+        ltz_radius_host: "{{ hostvars[groups['lab_rp'][0]].ansible_host }}"
+        ltz_radius_secret: labradius
+        ltz_radius_ca_file: /etc/ltz-trust/lab-ca-bundle.pem
+
+- name: EAP-TLS smoke test (eapol_test against lab RADIUS)
+  hosts: lab_workstations:lab_servers
+  become: true
+  vars:
+    radius_host: "{{ hostvars[groups['lab_rp'][0]].ansible_host }}"
+    radius_secret: labradius
+  tasks:
+    - name: Run eapol_test
+      ansible.builtin.shell: |
+        set -euo pipefail
+        CONF=/var/lib/ltz-trust/pki/eapol_test.conf
+        test -f "$CONF"
+        test -f /etc/ltz-trust/lab-ca-bundle.pem
+        # Ensure ca.pem used by eapol is the server-trust bundle
+        cp /etc/ltz-trust/lab-ca-bundle.pem /var/lib/ltz-trust/pki/ca.pem
+        BIN=$(command -v eapol_test || command -v eapoltest || true)
+        if [ -z "$BIN" ]; then
+          openssl verify -CAfile /etc/ltz-trust/lab-ca-bundle.pem \
+            /var/lib/ltz-trust/pki/device.crt
+          echo "eapol_test not installed; openssl verify OK"
+          exit 0
+        fi
+        $BIN -c "$CONF" -a "{{ radius_host }}" -s "{{ radius_secret }}" -r 1 -t 10 \
+          | tee /tmp/eapol_test.out
+        grep -q "SUCCESS" /tmp/eapol_test.out
+      args:
+        executable: /bin/bash
+      register: eap
+      failed_when: eap.rc != 0
+
+    - name: Show eapol result
+      ansible.builtin.debug:
+        msg: "{{ (eap.stdout_lines | default([]))[-20:] }}"

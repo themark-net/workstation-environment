@@ -23,6 +23,7 @@
     python3 -m venv /opt/ltz-attestor/.venv
     /opt/ltz-attestor/.venv/bin/pip install -r /opt/ltz-attestor/requirements.txt
   args:
+    executable: /bin/bash
     creates: /opt/ltz-attestor/.venv/bin/flask
 
 - name: Data dir
@@ -44,9 +45,12 @@
       Environment=LTZ_ATTESTOR_TOKEN_TTL=3600
       Environment=LTZ_ATTESTOR_HMAC_SECRET={{ ltz_attestor_hmac_secret | default('lab-only-secret') }}
       Environment=LTZ_ATTESTOR_REGISTRY=/var/lib/ltz-attestor/devices.json
+      Environment=LTZ_ATTESTOR_CHALLENGES=/var/lib/ltz-attestor/challenges.json
       Environment=LTZ_ATTESTOR_JOIN_TOKEN={{ ltz_join_token | default('lab-join') }}
       Environment=LTZ_ATTESTOR_REQUIRE_ENROLL=1
       Environment=LTZ_ATTESTOR_STRICT_TPM=0
+      Environment=LTZ_ATTESTOR_REQUIRE_HMAC=1
+      Environment=LTZ_ATTESTOR_BACKEND={{ ltz_attestor_backend | default('local') }}
       WorkingDirectory=/opt/ltz-attestor
       ExecStart=/opt/ltz-attestor/.venv/bin/python app.py
       Restart=on-failure

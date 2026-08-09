@@ -1,0 +1,23 @@
+---
+# Lab shared vars — keys aligned with client/ansible/vars/ltz.yml.example
+# so the transition lab → microsoft-dev is inventory/URL swap, not a new tree.
+
+lab_domain: ltz.lab
+step_ca_port: 8443
+step_ca_provisioner: ltz-admin
+# Lab-only secret; override via vault for shared controllers
+step_ca_password: "lab-only-change-me"
+cert_mint_port: 8445
+
+# --- Same surface as client ltz.yml ---
+ltz_deployment_profile: lab
+ltz_join_token: lab-join
+ltz_attestor_hmac_secret: lab-only-secret
+ltz_radius_secret: labradius
+lab_radius_client_cidr: "10.42.0.0/24"
+
+# Legacy paths used by older lab roles
+trust_status_path: /var/lib/org-trust/status.json
+policy_gen_path: /var/lib/org-trust/policy_gen
+rp_https_port: 443
+gate_port: 8089

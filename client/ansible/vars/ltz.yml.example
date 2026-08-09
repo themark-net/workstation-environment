@@ -1,0 +1,96 @@
+# =============================================================================
+# LTZ host deployment profile — ONE place for endpoints / Microsoft toggles
+# =============================================================================
+# Same Ansible playbooks for lab air-gap and Microsoft demo/prod-shaped hosts.
+# Only this file (or inventory group_vars with the same keys) changes.
+#
+#   cp vars/ltz.yml.example vars/ltz.yml
+#   # edit endpoints + ltz_microsoft block
+#   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-host.yml
+#
+# Profiles:
+#   lab            — Proxmox LTZ stack (local attestor, step-ca mint, FreeRADIUS)
+#   microsoft-dev  — same client roles; point attestor/mint at your services;
+#                    fill ltz_microsoft for Entra/Intune/Cloud PKI/MAA metadata
+#   production     — same keys; production URLs + stricter flags
+# =============================================================================
+
+# --- Profile name (evidence / docs only) ---
+ltz_deployment_profile: "lab"   # lab | microsoft-dev | production
+
+# --- Host class (also set per-host in inventory) ---
+# workstation | server
+ltz_host_class: workstation
+
+# =============================================================================
+# Device trust plane (always required)
+# Client talks ONLY to thin attestor — never to MAA directly.
+# =============================================================================
+ltz_attestor_url: "http://10.42.0.146:8443"
+ltz_collector_url: "http://10.42.0.146:8089"
+ltz_join_token: "lab-join"
+# Workstation: require TPM for attest. Server lab VMs: often false (no vTPM).
+ltz_strict_tpm: true
+
+# Attestor backend is SERVER-side only (on attestor host, not this file):
+#   LTZ_ATTESTOR_BACKEND=local   # lab HMAC tickets
+#   LTZ_ATTESTOR_BACKEND=maa     # Microsoft Azure Attestation (when licensed)
+
+# =============================================================================
+# Network plane (802.1X device certs) — optional but same playbook
+# Lab: step-ca + cert-mint. Microsoft: Cloud PKI / enterprise CA mint URL.
+# =============================================================================
+ltz_enable_device_cert: true
+ltz_cert_mint_url: "http://10.42.0.57:8445"
+ltz_radius_host: "10.42.0.146"
+ltz_radius_secret: "labradius"
+# On-host path to CA bundle that verifies the RADIUS *server* certificate.
+# Lab Ansible installs /etc/ltz-trust/lab-ca-bundle.pem (intermediate+root).
+# Microsoft: ship your enterprise RADIUS issuing chain to the same path (or set).
+ltz_radius_ca_file: "/etc/ltz-trust/lab-ca-bundle.pem"
+
+# =============================================================================
+# Microsoft / Intune plane (workstations; optional on servers)
+# Install Edge + Intune portal + GNOME so a human can enroll.
+# =============================================================================
+ltz_install_intune_prereqs: true
+ltz_intune_install_desktop: true
+
+# Artifacts to upload in Intune admin (NOT installed as policies by Ansible):
+#   client/intune/discovery.sh
+#   client/intune/rules.json
+
+# =============================================================================
+# Microsoft tenant metadata — ONE place for Entra / Azure / demo toggles
+# Does not change agent code paths by itself; ops docs + optional Graph use it.
+# Fill for microsoft-dev / production. Leave placeholders in pure lab air-gap.
+# =============================================================================
+ltz_microsoft:
+  tenant_id: "YOUR-TENANT-GUID"
+  tenant_domain: "yourtenant.onmicrosoft.com"
+  pilot_group: "LTZ-Pilot"
+  pilot_user_upn: "pilot@yourtenant.onmicrosoft.com"
+
+  # Intune custom compliance (admin console uploads)
+  intune_compliance_script: "client/intune/discovery.sh"
+  intune_compliance_rules: "client/intune/rules.json"
+
+  # Conditional Access — turn on only after pilot devices show Compliant
+  conditional_access_require_compliant: false
+
+  # Cloud PKI (device / SCEP-like issuance) — replaces lab step-ca mint in prod
+  # Not the same product as MAA. See docs/deployment/microsoft-path.md
+  cloud_pki_enabled: false
+  cloud_pki_mint_url: ""          # if you front Cloud PKI with a mint API
+  cloud_pki_issuing_ca_thumbprint: ""
+
+  # Microsoft Azure Attestation — attestor host backend only (E5/MAA license)
+  maa_enabled: false
+  maa_endpoint: ""                # e.g. https://sharedweu.weu.attest.azure.net
+  # On attestor VM: LTZ_ATTESTOR_BACKEND=maa + LTZ_MAA_ENDPOINT=...
+
+  # Entra certificate-based auth (user plane — Future, not MVP device path)
+  cba_enabled: false
+
+  # Optional Graph automation app (collector / inventory sync)
+  graph_app_id: ""

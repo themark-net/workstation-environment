@@ -11,14 +11,14 @@
   tasks:
     - name: Check root artifact on controller
       ansible.builtin.stat:
-        path: "{{ playbook_dir }}/../artifacts/root_ca.crt"
+        path: "{{ playbook_dir }}/../../artifacts/root_ca.crt"
       register: root
       delegate_to: localhost
       become: false
 
     - name: Install lab root CA
       ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../artifacts/root_ca.crt"
+        src: "{{ playbook_dir }}/../../artifacts/root_ca.crt"
         dest: /usr/local/share/ca-certificates/ltz-lab-root.crt
         mode: "0644"
       when: root.stat.exists

@@ -57,8 +57,10 @@ resource "proxmox_virtual_environment_vm" "lab" {
   }
 
   initialization {
-    datastore_id        = var.snippet_datastore_id
-    user_data_file_id   = proxmox_virtual_environment_file.user_data[each.key].id
+    # Cloud-init drive needs storage that supports content-type "images"
+    # (local-lvm). Snippets (user-data YAML) stay on snippet_datastore_id.
+    datastore_id      = var.datastore_id
+    user_data_file_id = proxmox_virtual_environment_file.user_data[each.key].id
     dynamic "ip_config" {
       for_each = try(var.vm_ip_cidr_map[each.key], "") != "" ? [1] : []
       content {
@@ -71,4 +73,10 @@ resource "proxmox_virtual_environment_vm" "lab" {
   }
 
   operating_system { type = "l26" }
+
+  # Cloud template defaults to serial VGA; workstations need a real display for
+  # GNOME + Intune portal at the Proxmox console. Others keep std as well.
+  vga {
+    type = "std"
+  }
 }

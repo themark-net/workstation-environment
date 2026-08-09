@@ -1,0 +1,21 @@
+---
+# Production-shaped Intune enrollment baseline (client tree — no lab imports).
+ltz_intune_install_desktop: true
+ltz_intune_desktop_packages:
+  - ubuntu-desktop-minimal
+  - spice-vdagent
+  - qemu-guest-agent
+ltz_intune_base_packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - apt-transport-https
+  - jq
+  - openssl
+# Microsoft package channels (Ubuntu 24.04 / noble)
+ltz_microsoft_prod_list: "/etc/apt/sources.list.d/microsoft-prod.list"
+ltz_microsoft_edge_list: "/etc/apt/sources.list.d/microsoft-edge.list"
+ltz_microsoft_packages:
+  - microsoft-edge-stable
+  - intune-portal
+  - microsoft-identity-broker

@@ -31,6 +31,7 @@
       LTZ_COLLECTOR_URL="{{ ltz_collector_url }}"
       LTZ_STATE_DIR="{{ ltz_state_dir }}"
       LTZ_STRICT_TPM="{{ 1 if ltz_strict_tpm else 0 }}"
+      LTZ_JOIN_TOKEN="{{ ltz_join_token | default('lab-join') }}"
 
 - name: systemd service
   ansible.builtin.copy:

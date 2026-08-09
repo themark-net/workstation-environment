@@ -1,0 +1,5 @@
+---
+step_ca_port: 8443
+step_ca_provisioner: ltz-admin
+step_ca_password: "lab-only-change-me"
+cert_mint_port: 8445
