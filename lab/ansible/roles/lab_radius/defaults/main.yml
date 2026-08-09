@@ -1,0 +1,3 @@
+---
+radius_secret: labradius
+lab_radius_client_cidr: "10.42.0.0/24"

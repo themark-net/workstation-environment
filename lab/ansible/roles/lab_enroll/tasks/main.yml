@@ -7,6 +7,8 @@
       echo "ltz-$(cat /etc/machine-id)" > /var/lib/ltz-trust/device_id
     fi
     cat /var/lib/ltz-trust/device_id
+  args:
+    executable: /bin/bash
   register: device_id_cmd
   changed_when: false
 
@@ -21,3 +23,12 @@
       meta:
         hostname: "{{ inventory_hostname }}"
     status_code: [200, 201]
+    return_content: true
+  register: enroll_resp
+
+- name: Persist device_secret for agent HMAC evidence
+  ansible.builtin.copy:
+    dest: /var/lib/ltz-trust/device_secret
+    mode: "0600"
+    content: "{{ (enroll_resp.json | default({})).device_secret | default('') }}\n"
+  when: (enroll_resp.json | default({})).device_secret is defined
