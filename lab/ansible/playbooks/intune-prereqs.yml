@@ -1,0 +1,10 @@
+---
+# Workstation baseline: Intune enrollment software + desktop.
+# Uses production client role only (no lab-only attestor).
+- name: Intune enrollment prerequisites on lab workstations
+  hosts: lab_workstations
+  become: true
+  roles:
+    - role: ltz_intune_prereqs
+      vars:
+        ltz_intune_install_desktop: true
