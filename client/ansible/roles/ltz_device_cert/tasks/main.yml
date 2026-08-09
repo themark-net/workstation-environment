@@ -1,0 +1,60 @@
+---
+# Request short-lived device client cert using valid attestor ticket.
+# Prod-shaped: private key stays on device; mint service only sees CSR + ticket.
+
+- name: PKI packages
+  ansible.builtin.apt:
+    name: [openssl, jq, curl, wpasupplicant, eapoltest]
+    state: present
+    update_cache: true
+  failed_when: false
+
+# eapoltest package name varies by distro/release
+- name: Ensure eapol_test available
+  ansible.builtin.apt:
+    name: [eapoltest]
+    state: present
+  failed_when: false
+
+- name: Trust config directory
+  ansible.builtin.file:
+    path: /etc/ltz-trust
+    state: directory
+    mode: "0750"
+
+- name: Device cert directory
+  ansible.builtin.file:
+    path: "{{ ltz_device_cert_dir }}"
+    state: directory
+    mode: "0750"
+
+- name: Install request script
+  ansible.builtin.copy:
+    src: request-device-cert.sh
+    dest: /usr/local/bin/ltz-request-device-cert
+    mode: "0755"
+
+- name: Install eapol test helper template
+  ansible.builtin.copy:
+    src: eapol-test-device.conf.j2
+    dest: /usr/local/share/ltz-eapol-test.conf.j2
+    mode: "0644"
+
+- name: Config snippet for cert mint + RADIUS
+  ansible.builtin.copy:
+    dest: /etc/ltz-trust/device-cert.env
+    mode: "0640"
+    content: |
+      LTZ_ATTESTOR_URL="{{ ltz_attestor_url }}"
+      LTZ_CERT_MINT_URL="{{ ltz_cert_mint_url }}"
+      LTZ_STATE_DIR="{{ ltz_state_dir }}"
+      LTZ_DEVICE_CERT_DIR="{{ ltz_device_cert_dir }}"
+      LTZ_RADIUS_HOST="{{ ltz_radius_host | default('') }}"
+      LTZ_RADIUS_SECRET="{{ ltz_radius_secret | default('') }}"
+      LTZ_RADIUS_CA_FILE="{{ ltz_radius_ca_file | default('/etc/ltz-trust/lab-ca-bundle.pem') }}"
+
+- name: Request device cert now
+  ansible.builtin.command: /usr/local/bin/ltz-request-device-cert
+  register: cert_req
+  changed_when: "'wrote' in cert_req.stdout or 'certificate' in cert_req.stdout"
+  failed_when: cert_req.rc != 0

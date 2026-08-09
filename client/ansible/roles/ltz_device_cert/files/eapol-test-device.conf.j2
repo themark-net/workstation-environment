@@ -1,0 +1,9 @@
+# template placeholder — runtime config written by request-device-cert.sh
+network={
+  key_mgmt=WPA-EAP
+  eap=TLS
+  identity="device"
+  ca_cert="/var/lib/ltz-trust/pki/chain.pem"
+  client_cert="/var/lib/ltz-trust/pki/device.crt"
+  private_key="/var/lib/ltz-trust/pki/device.key"
+}

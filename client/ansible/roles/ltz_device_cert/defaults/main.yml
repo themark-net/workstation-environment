@@ -1,0 +1,10 @@
+---
+ltz_attestor_url: ""
+ltz_cert_mint_url: ""
+ltz_state_dir: /var/lib/ltz-trust
+ltz_device_cert_dir: /var/lib/ltz-trust/pki
+# RADIUS / EAP-TLS (optional — empty skips radius hints in env)
+ltz_radius_host: ""
+ltz_radius_secret: ""
+# Path on the target host to CA bundle that verifies the RADIUS *server* cert
+ltz_radius_ca_file: /etc/ltz-trust/lab-ca-bundle.pem
