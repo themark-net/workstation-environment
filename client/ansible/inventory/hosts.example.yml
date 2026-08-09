@@ -1,0 +1,24 @@
+# Example inventory — lab or real hosts use the same shape.
+all:
+  vars:
+    ansible_user: ltz          # or your admin user
+    ansible_python_interpreter: /usr/bin/python3
+  children:
+    ltz_workstations:
+      hosts:
+        ws1.example:
+          ansible_host: 10.42.0.52
+          ltz_host_class: workstation
+          ltz_strict_tpm: true
+          ltz_install_intune_prereqs: true
+          ltz_intune_install_desktop: true
+          ltz_enable_device_cert: true
+    ltz_servers:
+      hosts:
+        svc-a.example:
+          ansible_host: 10.42.0.239
+          ltz_host_class: server
+          ltz_strict_tpm: false
+          ltz_install_intune_prereqs: false
+          ltz_intune_install_desktop: false
+          ltz_enable_device_cert: true
