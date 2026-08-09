@@ -1,0 +1,82 @@
+---
+# Bootstrap a new host with LTZ client baseline.
+# Same playbook for lab and real/Microsoft demo — only vars change.
+#
+#   cp vars/ltz.yml.example vars/ltz.yml   # once
+#   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-host.yml
+#
+# Or: -e @vars/ltz.yml
+#
+# Roles live under client/ only (no lab/ imports).
+
+- name: LTZ host bootstrap
+  hosts: all
+  become: true
+  vars_files:
+    - "{{ playbook_dir }}/../vars/ltz.yml"
+  tasks:
+    - name: Normalize class defaults
+      ansible.builtin.set_fact:
+        ltz_host_class: "{{ ltz_host_class | default('workstation') }}"
+        ltz_install_intune_prereqs: "{{ ltz_install_intune_prereqs | default(ltz_host_class == 'workstation') }}"
+        ltz_intune_install_desktop: "{{ ltz_intune_install_desktop | default(ltz_host_class == 'workstation') }}"
+        ltz_enable_device_cert: "{{ ltz_enable_device_cert | default(true) }}"
+        ltz_strict_tpm: "{{ ltz_strict_tpm | default(ltz_host_class == 'workstation') }}"
+        ltz_radius_ca_file: "{{ ltz_radius_ca_file | default('/etc/ltz-trust/lab-ca-bundle.pem') }}"
+
+    - name: Write host class marker
+      ansible.builtin.copy:
+        dest: /etc/ltz-host-class
+        mode: "0644"
+        content: "{{ ltz_host_class }}\n"
+
+    - name: Write deployment profile marker
+      ansible.builtin.copy:
+        dest: /etc/ltz-deployment-profile
+        mode: "0644"
+        content: |
+          profile={{ ltz_deployment_profile | default('unset') }}
+          class={{ ltz_host_class }}
+          attestor={{ ltz_attestor_url }}
+          mint={{ ltz_cert_mint_url | default('') }}
+
+    - name: Intune enrollment prerequisites (workstation path)
+      ansible.builtin.include_role:
+        name: ltz_intune_prereqs
+      vars:
+        ltz_intune_install_desktop: "{{ ltz_intune_install_desktop }}"
+      when: ltz_install_intune_prereqs | bool
+
+    - name: Trust agent (attestor client — all hosts)
+      ansible.builtin.include_role:
+        name: ltz_trust_agent
+      vars:
+        ltz_attestor_url: "{{ ltz_attestor_url }}"
+        ltz_collector_url: "{{ ltz_collector_url }}"
+        ltz_strict_tpm: "{{ ltz_strict_tpm }}"
+        ltz_join_token: "{{ ltz_join_token | default('lab-join') }}"
+
+    - name: Device cert for 802.1X (ticket-gated mint)
+      ansible.builtin.include_role:
+        name: ltz_device_cert
+      vars:
+        ltz_attestor_url: "{{ ltz_attestor_url }}"
+        ltz_cert_mint_url: "{{ ltz_cert_mint_url }}"
+        ltz_radius_host: "{{ ltz_radius_host | default('') }}"
+        ltz_radius_secret: "{{ ltz_radius_secret | default('') }}"
+        ltz_radius_ca_file: "{{ ltz_radius_ca_file }}"
+      when:
+        - ltz_enable_device_cert | bool
+        - ltz_cert_mint_url is defined
+        - ltz_cert_mint_url | length > 0
+
+    - name: Bootstrap summary
+      ansible.builtin.debug:
+        msg:
+          - "profile={{ ltz_deployment_profile | default('unset') }}"
+          - "class={{ ltz_host_class }}"
+          - "attestor={{ ltz_attestor_url }}"
+          - "intune_prereqs={{ ltz_install_intune_prereqs }}"
+          - "device_cert={{ ltz_enable_device_cert }}"
+          - "microsoft.tenant={{ ltz_microsoft.tenant_domain | default('n/a') if ltz_microsoft is defined else 'n/a' }}"
+          - "next=open intune-portal if workstation; verify status.json attested=true; eapol if RADIUS ready"

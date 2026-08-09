@@ -1,11 +1,3 @@
 ---
-# Production-shaped install of LTZ client agent.
-# Inventory and attestor/collector URLs are provided by the caller — no lab imports.
-- name: LTZ trust agent
-  hosts: all
-  become: true
-  roles:
-    - role: ltz_trust_agent
-      vars:
-        ltz_attestor_url: "{{ attestor_url | default(ltz_attestor_url) }}"
-        ltz_collector_url: "{{ collector_url | default(ltz_collector_url) }}"
+# Alias for bootstrap-host (prod-shaped entrypoint).
+- ansible.builtin.import_playbook: bootstrap-host.yml
