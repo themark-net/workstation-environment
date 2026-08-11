@@ -1,0 +1,63 @@
+---
+# ansible-pull entrypoint — runs ON the host (localhost).
+# Only idempotent assert / agent refresh / optional modular roles.
+# Does NOT re-format LUKS, re-enroll Intune GUI, or mint certs by default.
+#
+# Invoked by: ansible-pull -U <repo> -C main client/ansible/playbooks/pull-local.yml
+# Or systemd: ltz-ansible-pull.timer (see role ltz_ansible_pull)
+
+- name: LTZ pull-local baseline
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+  vars_files:
+    - "{{ playbook_dir }}/../vars/ltz.yml"
+  tasks:
+    - name: Normalize pull defaults (conservative)
+      ansible.builtin.set_fact:
+        ltz_enable_tpm_luks: "{{ ltz_enable_tpm_luks | default(true) }}"
+        ltz_tpm_luks_mode: "assert"
+        ltz_tpm_luks_require_tpm: false
+        ltz_enable_device_cert: false
+        ltz_install_intune_prereqs: false
+        ltz_enable_compliance: "{{ ltz_enable_compliance | default(true) }}"
+        ltz_enable_sssd_oidc: "{{ ltz_enable_sssd_oidc | default(false) }}"
+        ltz_enable_mdatp: "{{ ltz_enable_mdatp | default(false) }}"
+        ltz_enable_nessus: "{{ ltz_enable_nessus | default(false) }}"
+        ltz_enable_log_forward: "{{ ltz_enable_log_forward | default(false) }}"
+        ltz_enable_ansible_pull: false
+        ltz_modular_roles: "{{ ltz_modular_roles | default([
+            {'role': 'ltz_sssd_oidc', 'flag': 'ltz_enable_sssd_oidc'},
+            {'role': 'ltz_mdatp', 'flag': 'ltz_enable_mdatp'},
+            {'role': 'ltz_nessus', 'flag': 'ltz_enable_nessus'},
+            {'role': 'ltz_log_forward', 'flag': 'ltz_enable_log_forward'},
+            {'role': 'ltz_compliance', 'flag': 'ltz_enable_compliance'}
+          ]) }}"
+
+    - name: Refresh trust agent
+      ansible.builtin.include_role:
+        name: ltz_trust_agent
+      vars:
+        ltz_attestor_url: "{{ ltz_attestor_url }}"
+        ltz_collector_url: "{{ ltz_collector_url | default('') }}"
+        ltz_strict_tpm: "{{ ltz_strict_tpm | default(false) }}"
+        ltz_join_token: "{{ ltz_join_token | default('lab-join') }}"
+      when: ltz_attestor_url is defined and (ltz_attestor_url | length > 0)
+
+    - name: Assert disk encryption posture
+      ansible.builtin.include_role:
+        name: ltz_tpm_luks
+      when: ltz_enable_tpm_luks | bool
+
+    - name: Modular optional roles
+      ansible.builtin.include_role:
+        name: "{{ item.role }}"
+      loop: "{{ ltz_modular_roles }}"
+      when: lookup('vars', item.flag, default=false) | bool
+      loop_control:
+        label: "{{ item.role }}"
+
+    - name: Pull summary
+      ansible.builtin.debug:
+        msg: "pull-local complete host={{ inventory_hostname }} compliance={{ ltz_enable_compliance }}"

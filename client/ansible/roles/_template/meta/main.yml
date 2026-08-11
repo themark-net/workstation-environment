@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  role_name: ltz_TEMPLATE
+  description: Copy-me stub for LTZ modular baseline roles
+  license: MIT
+  min_ansible_version: "2.14"
+dependencies: []
