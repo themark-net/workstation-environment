@@ -28,6 +28,12 @@ ltz_tpm_luks_require_tpm: true       # false on lab hosts without vTPM
 # Never commit real passphrases — use ansible-vault or -e
 ltz_tpm_luks_passphrase: ""
 
+# Recovery key escrow (BitLocker-style) — Ansible controller fetch
+ltz_tpm_luks_escrow_enable: true
+ltz_tpm_luks_escrow_wrap: none          # none | age | openssl
+ltz_tpm_luks_escrow_pubkey_path: ""     # on target host if wrap!=none
+ltz_tpm_luks_escrow_strict: false
+
 
 # Device cert mint: lab cert-mint API shape OR your Cloud PKI front door
 ltz_enable_device_cert: true

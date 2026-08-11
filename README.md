@@ -49,7 +49,7 @@
    docs/deployment/sssd-oidc-staging.md
 
 6. Confirm TPM/LUKS encryption claim green on pilot hosts
-   ltz_tpm_luks role (assert|enroll|data_volume)
+   ltz_tpm_luks role (assert|enroll|data_volume) + recovery escrow to secrets/
 
 7. Stop. That is prod MVP.
 ```

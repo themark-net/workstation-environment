@@ -34,11 +34,15 @@
     - /var/lib/ltz-trust
     - /usr/local/lib/ltz
 
-- name: Install status helper
+- name: Install status + escrow helpers
   ansible.builtin.copy:
-    src: ltz-tpm-luks-status.sh
-    dest: /usr/local/lib/ltz/ltz-tpm-luks-status.sh
+    src: "{{ item }}"
+    dest: "/usr/local/lib/ltz/{{ item }}"
     mode: "0755"
+  loop:
+    - ltz-tpm-luks-status.sh
+    - ltz-luks-escrow.sh
+    - ltz-luks-escrow-wrap.sh
 
 - name: Detect TPM
   ansible.builtin.stat:
@@ -235,6 +239,10 @@
     - ltz_tpm_luks_mode == 'assert'
     - ltz_luks_assert.rc is defined
     - ltz_luks_assert.rc != 0
+
+- name: Recovery key escrow (BitLocker-style)
+  ansible.builtin.include_tasks: escrow.yml
+  when: ltz_tpm_luks_escrow_enable | bool
 
 - name: Write encryption status JSON
   ansible.builtin.command: /usr/local/lib/ltz/ltz-tpm-luks-status.sh

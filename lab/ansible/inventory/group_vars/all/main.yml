@@ -29,4 +29,5 @@ ltz_tpm_luks_mode: "data_volume"
 ltz_tpm_luks_require_tpm: false
 # set via vault / -e in real use; lab demo passphrase only
 ltz_tpm_luks_passphrase: "lab-only-luks-change-me"
-
+ltz_tpm_luks_escrow_enable: true
+ltz_tpm_luks_escrow_strict: false

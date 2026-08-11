@@ -36,6 +36,10 @@ if [[ -n "$root_src" ]]; then
 fi
 
 data_vol=false
+recovery_escrowed=false
+if compgen -G "/var/lib/ltz-trust/escrow/*.escrowed" > /dev/null; then
+  recovery_escrowed=true
+fi
 if findmnt -n /var/lib/ltz-secure &>/dev/null || [[ -e /dev/mapper/ltz-secure ]]; then
   data_vol=true
 fi
@@ -54,6 +58,7 @@ jq -nc \
   --argjson root_is_luks "$root_is_luks" \
   --argjson tpm_enrolled "$tpm_enrolled" \
   --argjson data_volume "$data_vol" \
+  --argjson recovery_escrowed "$recovery_escrowed" \
   --arg root_source "${root_src:-}" \
   --arg root_fstype "${root_fstype:-}" \
   '{schema:$schema,ts:$ts,tpm_present:$tpm_present,disk_encrypted:$disk_encrypted,root_is_luks:$root_is_luks,tpm_enrolled:$tpm_enrolled,data_volume:$data_volume,root_source:$root_source,root_fstype:$root_fstype}' \

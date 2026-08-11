@@ -12,7 +12,7 @@
 |-------|-----------|--------------|
 | **User login on Linux** | SSSD OIDC → Entra (**done** in design; **staging tenant test next**) | Optional polish; CBA later |
 | **Device trust** | Enroll + **thin attestor** + compliance agent + Intune custom compliance + CA **require compliant device** | Stronger PCR/MAA; continuous re-attest |
-| **Disk encryption** | **TPM + LUKS baseline** on hosts (`ltz_tpm_luks` role; Intune `disk_encrypted` claim) | PCR policy hardening, remote recovery escrow |
+| **Disk encryption** | **TPM + LUKS baseline + recovery-key escrow (Ansible fetch)** on hosts (`ltz_tpm_luks` role; Intune `disk_encrypted` claim) | PCR policy hardening, remote recovery escrow |
 | **User phishing-resistant cloud auth** | **Not required for MVP** — existing MFA as org policy allows | **Entra CBA** (TPM PKCS#11, no USB) or FIDO2 |
 | **Workload identity** | Out of MVP unless a single agent needs a client cert | MS CA workload intermediate; optional SPIRE under MS CA |
 | **Network (802.1X)** | **Lab MVP proven** (ticket-gated device cert + FreeRADIUS EAP-TLS); same client path for pilot | Enterprise RADIUS/NPS fleet scale-out |

@@ -18,3 +18,27 @@ ltz_tpm_luks_pcrs: "0+2+4+7"
 ltz_tpm_luks_status_path: "/var/lib/ltz-trust/disk-encryption.json"
 # Passphrase for one-shot enroll / format — prefer --extra-vars or vault, never commit
 ltz_tpm_luks_passphrase: ""
+
+# -----------------------------------------------------------------------------
+# Recovery key escrow (BitLocker-style)
+# -----------------------------------------------------------------------------
+# TPM unlock is convenience; recovery key is break-glass when PCRs change.
+# Ansible controller pulls the package (like AD/Intune escrow for BitLocker).
+# Clevis/Tang is NOT escrow — that is network-bound auto-unlock (see runbook).
+ltz_tpm_luks_escrow_enable: true
+# Generate recovery slot when missing (requires passphrase for enroll)
+ltz_tpm_luks_escrow_ensure_recovery_key: true
+# Where packages land on the *controller* (BitLocker ≈ AD msFVE-RecoveryPassword)
+ltz_tpm_luks_escrow_controller_dir: "{{ playbook_dir }}/../../../secrets/luks-escrow"
+# Host-side working paths
+ltz_tpm_luks_escrow_host_dir: /var/lib/ltz-trust/escrow
+ltz_tpm_luks_escrow_package: /var/lib/ltz-trust/escrow/package.json
+ltz_tpm_luks_escrow_package_wrapped: /var/lib/ltz-trust/escrow/package.wrapped
+# none | age | openssl — encrypt before fetch (recommended for multi-admin controllers)
+ltz_tpm_luks_escrow_wrap: none
+# Path *on the target host* to age recipients file or openssl public key PEM
+ltz_tpm_luks_escrow_pubkey_path: ""
+# Delete plaintext package on host after successful controller fetch
+ltz_tpm_luks_escrow_delete_local_after_fetch: true
+# Fail the role if escrow enabled but fetch/package fails
+ltz_tpm_luks_escrow_strict: false

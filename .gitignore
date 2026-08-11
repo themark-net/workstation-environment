@@ -1,2 +1,5 @@
 lab/terraform/terraform.tfvars
 lab/credentials.local
+# LUKS recovery escrow packages (BitLocker analogue — never commit)
+secrets/
+**/secrets/luks-escrow/

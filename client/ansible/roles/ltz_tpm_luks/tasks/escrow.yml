@@ -1,0 +1,188 @@
+---
+# BitLocker-style recovery key escrow via Ansible controller fetch.
+# Clevis is intentionally separate (NBDE / network unlock), not escrow.
+# Included only when ltz_tpm_luks_escrow_enable | bool.
+
+- name: Install jq for escrow JSON
+  ansible.builtin.package:
+    name: jq
+    state: present
+
+- name: Try install age for wrap (Debian)
+  ansible.builtin.apt:
+    name: age
+    state: present
+    update_cache: true
+  when:
+    - ansible_os_family == 'Debian'
+    - ltz_tpm_luks_escrow_wrap == 'age'
+  failed_when: false
+
+- name: Escrow dirs on host
+  ansible.builtin.file:
+    path: "{{ ltz_tpm_luks_escrow_host_dir }}"
+    state: directory
+    mode: "0700"
+    owner: root
+    group: root
+
+- name: Resolve LUKS device for escrow
+  ansible.builtin.shell: |
+    set -euo pipefail
+    DEV="{{ ltz_tpm_luks_device | default('') }}"
+    if [ -n "$DEV" ] && cryptsetup isLuks "$DEV" 2>/dev/null; then
+      echo "$DEV"
+      exit 0
+    fi
+    if [ "{{ ltz_tpm_luks_mode }}" = "data_volume" ] && cryptsetup isLuks "{{ ltz_tpm_luks_data_image }}" 2>/dev/null; then
+      echo "{{ ltz_tpm_luks_data_image }}"
+      exit 0
+    fi
+    SRC=$(findmnt -n -o SOURCE / || true)
+    if [[ "$SRC" == /dev/mapper/* ]]; then
+      NAME="${SRC#/dev/mapper/}"
+      UNDER=$(cryptsetup status "$NAME" 2>/dev/null | awk '/device:/{print $2}')
+      if [ -n "${UNDER:-}" ] && cryptsetup isLuks "$UNDER" 2>/dev/null; then
+        echo "$UNDER"
+        exit 0
+      fi
+    fi
+    if [ -n "$SRC" ] && cryptsetup isLuks "$SRC" 2>/dev/null; then
+      echo "$SRC"
+      exit 0
+    fi
+    exit 1
+  args:
+    executable: /bin/bash
+  register: ltz_escrow_dev
+  changed_when: false
+  failed_when: false
+
+- name: No LUKS device — skip escrow
+  ansible.builtin.debug:
+    msg: "No LUKS device found for escrow (install with FDE or use data_volume first)."
+  when: ltz_escrow_dev.rc | default(1) != 0
+
+- name: Write temporary passphrase file for enroll
+  ansible.builtin.copy:
+    dest: "{{ ltz_tpm_luks_escrow_host_dir }}/.pass"
+    mode: "0600"
+    content: "{{ ltz_tpm_luks_passphrase }}"
+  when:
+    - ltz_escrow_dev.rc | default(1) == 0
+    - (ltz_tpm_luks_passphrase | default('') | length) > 0
+  no_log: true
+
+- name: Generate / export recovery escrow package
+  ansible.builtin.shell: |
+    set -euo pipefail
+    ARGS=(/usr/local/lib/ltz/ltz-luks-escrow.sh
+      --device "{{ ltz_escrow_dev.stdout | trim }}"
+      --out "{{ ltz_tpm_luks_escrow_package }}")
+    if [ -f "{{ ltz_tpm_luks_escrow_host_dir }}/.pass" ]; then
+      ARGS+=(--passphrase-file "{{ ltz_tpm_luks_escrow_host_dir }}/.pass")
+    fi
+    "${ARGS[@]}"
+  args:
+    executable: /bin/bash
+  environment:
+    LTZ_LUKS_PASSPHRASE: "{{ ltz_tpm_luks_passphrase | default('') }}"
+  when:
+    - ltz_escrow_dev.rc | default(1) == 0
+    - ltz_tpm_luks_escrow_ensure_recovery_key | bool
+  register: ltz_escrow_gen
+  no_log: true
+  failed_when:
+    - ltz_escrow_gen.rc | default(0) != 0
+    - ltz_tpm_luks_escrow_strict | bool
+
+- name: Shred temporary passphrase file
+  ansible.builtin.file:
+    path: "{{ ltz_tpm_luks_escrow_host_dir }}/.pass"
+    state: absent
+  no_log: true
+
+- name: Wrap escrow package (optional age/openssl)
+  ansible.builtin.command:
+    argv:
+      - /usr/local/lib/ltz/ltz-luks-escrow-wrap.sh
+      - --in
+      - "{{ ltz_tpm_luks_escrow_package }}"
+      - --out
+      - "{{ ltz_tpm_luks_escrow_package_wrapped }}"
+      - --method
+      - "{{ ltz_tpm_luks_escrow_wrap }}"
+      - --pubkey
+      - "{{ ltz_tpm_luks_escrow_pubkey_path | default('') }}"
+  when:
+    - ltz_escrow_gen is defined
+    - ltz_escrow_gen is succeeded
+    - ltz_escrow_dev.rc | default(1) == 0
+    - ltz_tpm_luks_escrow_wrap != 'none'
+  register: ltz_escrow_wrap_r
+  failed_when:
+    - ltz_escrow_wrap_r.rc | default(0) != 0
+    - ltz_tpm_luks_escrow_strict | bool
+
+- name: Choose fetch source path
+  ansible.builtin.set_fact:
+    ltz_escrow_fetch_src: "{{ ltz_tpm_luks_escrow_package_wrapped if (ltz_tpm_luks_escrow_wrap | default('none')) != 'none' else ltz_tpm_luks_escrow_package }}"
+  when: ltz_escrow_dev.rc | default(1) == 0
+
+- name: Ensure controller escrow directory exists
+  ansible.builtin.file:
+    path: "{{ ltz_tpm_luks_escrow_controller_dir }}"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+  when: ltz_escrow_dev.rc | default(1) == 0
+
+- name: Fetch escrow package to Ansible controller (BitLocker AD analogue)
+  ansible.builtin.fetch:
+    src: "{{ ltz_escrow_fetch_src }}"
+    dest: "{{ ltz_tpm_luks_escrow_controller_dir }}/{{ inventory_hostname }}/"
+    flat: false
+    fail_on_missing: "{{ ltz_tpm_luks_escrow_strict | bool }}"
+  when:
+    - ltz_escrow_dev.rc | default(1) == 0
+    - ltz_escrow_fetch_src is defined
+  register: ltz_escrow_fetch
+
+- name: Mark recovery escrowed on host after successful fetch
+  ansible.builtin.shell: |
+    set -euo pipefail
+    DEV="{{ ltz_escrow_dev.stdout | trim }}"
+    H=$(printf '%s' "$DEV" | sha256sum | awk '{print $1}')
+    /usr/local/lib/ltz/ltz-luks-escrow.sh --mark-escrowed \
+      "{{ ltz_tpm_luks_escrow_host_dir }}/${H}.escrowed"
+  args:
+    executable: /bin/bash
+  when:
+    - ltz_escrow_fetch is defined
+    - ltz_escrow_fetch is succeeded
+    - not (ltz_escrow_fetch.failed | default(false))
+    - ltz_escrow_dev.rc | default(1) == 0
+
+- name: Remove plaintext recovery package from host
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ ltz_tpm_luks_escrow_package }}"
+    - "{{ ltz_tpm_luks_escrow_package_wrapped }}"
+  when:
+    - ltz_tpm_luks_escrow_delete_local_after_fetch | bool
+    - ltz_escrow_fetch is defined
+    - ltz_escrow_fetch is succeeded
+    - not (ltz_escrow_fetch.failed | default(false))
+  no_log: true
+
+- name: Escrow summary
+  ansible.builtin.debug:
+    msg: >-
+      LUKS recovery escrow: device={{ ltz_escrow_dev.stdout | default('n/a') | trim }}
+      controller={{ ltz_tpm_luks_escrow_controller_dir }}/{{ inventory_hostname }}
+      wrap={{ ltz_tpm_luks_escrow_wrap }}
+      (treat like BitLocker recovery passwords — vault/offline backup)
+  when: ltz_escrow_dev.rc | default(1) == 0
