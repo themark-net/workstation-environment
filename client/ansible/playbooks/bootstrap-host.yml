@@ -8,6 +8,8 @@
 # Or: -e @vars/ltz.yml
 #
 # Roles live under client/ only (no lab/ imports).
+# Core roles run first; modular optional roles are driven by ltz_modular_roles
+# + per-role enable flags (see vars/ltz.yml.example).
 
 - name: LTZ host bootstrap
   hosts: all
@@ -15,7 +17,7 @@
   vars_files:
     - "{{ playbook_dir }}/../vars/ltz.yml"
   tasks:
-    - name: Normalize class defaults
+    - name: Normalize class and core defaults
       ansible.builtin.set_fact:
         ltz_host_class: "{{ ltz_host_class | default('workstation') }}"
         ltz_install_intune_prereqs: "{{ ltz_install_intune_prereqs | default(ltz_host_class == 'workstation') }}"
@@ -26,6 +28,23 @@
         ltz_enable_tpm_luks: "{{ ltz_enable_tpm_luks | default(true) }}"
         ltz_tpm_luks_mode: "{{ ltz_tpm_luks_mode | default('assert') }}"
         ltz_tpm_luks_require_tpm: "{{ ltz_tpm_luks_require_tpm | default(ltz_host_class == 'workstation') }}"
+
+    - name: Normalize modular role flags (safe defaults)
+      ansible.builtin.set_fact:
+        ltz_enable_compliance: "{{ ltz_enable_compliance | default(true) }}"
+        ltz_enable_sssd_oidc: "{{ ltz_enable_sssd_oidc | default(false) }}"
+        ltz_enable_ansible_pull: "{{ ltz_enable_ansible_pull | default(false) }}"
+        ltz_enable_mdatp: "{{ ltz_enable_mdatp | default(false) }}"
+        ltz_enable_nessus: "{{ ltz_enable_nessus | default(false) }}"
+        ltz_enable_log_forward: "{{ ltz_enable_log_forward | default(false) }}"
+        ltz_modular_roles: "{{ ltz_modular_roles | default([
+            {'role': 'ltz_sssd_oidc', 'flag': 'ltz_enable_sssd_oidc'},
+            {'role': 'ltz_mdatp', 'flag': 'ltz_enable_mdatp'},
+            {'role': 'ltz_nessus', 'flag': 'ltz_enable_nessus'},
+            {'role': 'ltz_log_forward', 'flag': 'ltz_enable_log_forward'},
+            {'role': 'ltz_ansible_pull', 'flag': 'ltz_enable_ansible_pull'},
+            {'role': 'ltz_compliance', 'flag': 'ltz_enable_compliance'}
+          ]) }}"
 
     - name: Write host class marker
       ansible.builtin.copy:
@@ -83,6 +102,14 @@
         - ltz_cert_mint_url is defined
         - ltz_cert_mint_url | length > 0
 
+    - name: Modular optional roles (SSSD OIDC, compliance, MDATP, Nessus, log forward, ansible-pull)
+      ansible.builtin.include_role:
+        name: "{{ item.role }}"
+      loop: "{{ ltz_modular_roles }}"
+      when: lookup('vars', item.flag, default=false) | bool
+      loop_control:
+        label: "{{ item.role }}"
+
     - name: Bootstrap summary
       ansible.builtin.debug:
         msg:
@@ -92,5 +119,9 @@
           - "intune_prereqs={{ ltz_install_intune_prereqs }}"
           - "device_cert={{ ltz_enable_device_cert }}"
           - "tpm_luks={{ ltz_enable_tpm_luks }} mode={{ ltz_tpm_luks_mode }}"
+          - "sssd_oidc={{ ltz_enable_sssd_oidc }}"
+          - "compliance={{ ltz_enable_compliance }}"
+          - "ansible_pull={{ ltz_enable_ansible_pull }}"
+          - "mdatp={{ ltz_enable_mdatp }} nessus={{ ltz_enable_nessus }} log_forward={{ ltz_enable_log_forward }}"
           - "microsoft.tenant={{ ltz_microsoft.tenant_domain | default('n/a') if ltz_microsoft is defined else 'n/a' }}"
           - "next=open intune-portal if workstation; verify status.json attested=true; eapol if RADIUS ready"
