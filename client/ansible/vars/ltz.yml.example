@@ -32,6 +32,18 @@ ltz_join_token: "lab-join"
 # Workstation: require TPM for attest. Server lab VMs: often false (no vTPM).
 ltz_strict_tpm: true
 
+# =============================================================================
+# Disk encryption (TPM + LUKS) — required for baseline compliance posture
+# =============================================================================
+# Greenfield workstations: install with LUKS, then mode=enroll (TPM bind) or assert.
+# Lab VMs without re-install: mode=data_volume + passphrase (via vault/extra-vars).
+ltz_enable_tpm_luks: true
+ltz_tpm_luks_mode: "assert"          # assert | enroll | data_volume
+ltz_tpm_luks_require_tpm: true       # false on lab hosts without vTPM
+# Never commit real passphrases — use ansible-vault or -e
+ltz_tpm_luks_passphrase: ""
+
+
 # Attestor backend is SERVER-side only (on attestor host, not this file):
 #   LTZ_ATTESTOR_BACKEND=local   # lab HMAC tickets
 #   LTZ_ATTESTOR_BACKEND=maa     # Microsoft Azure Attestation (when licensed)

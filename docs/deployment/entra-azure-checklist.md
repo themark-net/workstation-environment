@@ -47,7 +47,7 @@ Fill `ltz_microsoft` in `client/ansible/vars/ltz.yml` as you complete items.
 **Vars:** `intune_compliance_script`, `intune_compliance_rules`.  
 **REQ:** M03, M04.
 
-Discovery only passes when `/var/lib/ltz-trust/status.json` shows attested + fresh ticket — same contract as lab.
+Discovery requires `attested` + `ticket_fresh` + **`disk_encrypted`** (from `ltz_tpm_luks` status). Same contract as lab.
 
 ---
 

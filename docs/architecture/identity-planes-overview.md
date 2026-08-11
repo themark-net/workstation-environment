@@ -28,6 +28,7 @@ PLANE D — DEVICE (laptop/workstation)     ★ MVP CRITICAL PATH
   Thin attestor → short-lived device ticket/cert
   Compliance agent → collector / Intune custom compliance artifacts
   Conditional Access: require compliant device
+  Disk: TPM+LUKS baseline (disk_encrypted claim)
   Network: **802.1X EAP-TLS** uses the **same device cert** (machine auth)
            Lab optional; production with device intermediate + RADIUS
 

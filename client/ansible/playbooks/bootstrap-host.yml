@@ -23,6 +23,9 @@
         ltz_enable_device_cert: "{{ ltz_enable_device_cert | default(true) }}"
         ltz_strict_tpm: "{{ ltz_strict_tpm | default(ltz_host_class == 'workstation') }}"
         ltz_radius_ca_file: "{{ ltz_radius_ca_file | default('/etc/ltz-trust/lab-ca-bundle.pem') }}"
+        ltz_enable_tpm_luks: "{{ ltz_enable_tpm_luks | default(true) }}"
+        ltz_tpm_luks_mode: "{{ ltz_tpm_luks_mode | default('assert') }}"
+        ltz_tpm_luks_require_tpm: "{{ ltz_tpm_luks_require_tpm | default(ltz_host_class == 'workstation') }}"
 
     - name: Write host class marker
       ansible.builtin.copy:
@@ -39,6 +42,16 @@
           class={{ ltz_host_class }}
           attestor={{ ltz_attestor_url }}
           mint={{ ltz_cert_mint_url | default('') }}
+
+    - name: TPM-backed LUKS baseline (encryption requirement)
+      ansible.builtin.include_role:
+        name: ltz_tpm_luks
+      vars:
+        ltz_enable_tpm_luks: "{{ ltz_enable_tpm_luks }}"
+        ltz_tpm_luks_mode: "{{ ltz_tpm_luks_mode }}"
+        ltz_tpm_luks_require_tpm: "{{ ltz_tpm_luks_require_tpm }}"
+        ltz_tpm_luks_passphrase: "{{ ltz_tpm_luks_passphrase | default('') }}"
+      when: ltz_enable_tpm_luks | bool
 
     - name: Intune enrollment prerequisites (workstation path)
       ansible.builtin.include_role:
@@ -78,5 +91,6 @@
           - "attestor={{ ltz_attestor_url }}"
           - "intune_prereqs={{ ltz_install_intune_prereqs }}"
           - "device_cert={{ ltz_enable_device_cert }}"
+          - "tpm_luks={{ ltz_enable_tpm_luks }} mode={{ ltz_tpm_luks_mode }}"
           - "microsoft.tenant={{ ltz_microsoft.tenant_domain | default('n/a') if ltz_microsoft is defined else 'n/a' }}"
           - "next=open intune-portal if workstation; verify status.json attested=true; eapol if RADIUS ready"

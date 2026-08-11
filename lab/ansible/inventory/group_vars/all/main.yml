@@ -21,3 +21,12 @@ trust_status_path: /var/lib/org-trust/status.json
 policy_gen_path: /var/lib/org-trust/policy_gen
 rp_https_port: 443
 gate_port: 8089
+
+# Disk encryption baseline (lab VMs often lack full root LUKS at first boot)
+ltz_enable_tpm_luks: true
+# data_volume is lab-friendly without reinstall; greenfield prod uses assert/enroll
+ltz_tpm_luks_mode: "data_volume"
+ltz_tpm_luks_require_tpm: false
+# set via vault / -e in real use; lab demo passphrase only
+ltz_tpm_luks_passphrase: "lab-only-luks-change-me"
+

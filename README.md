@@ -6,6 +6,7 @@
 |--------------|---------|------------------|
 | SSSD OIDC → Entra user login | Compliant Linux device in CA | Entra CBA / Hello-class user |
 | Lab dual-path + 802.1X green | Same code on real hosts + tenant | SPIRE, full AWX, prod MAA |
+| | TPM+LUKS baseline + SSSD OIDC tenant staging | Entra CBA |
 
 ---
 
@@ -44,7 +45,13 @@
    after Compliant green: CA report-only → require compliant device
    see docs/deployment/entra-azure-checklist.md
 
-5. Stop. That is prod MVP.
+5. Stage SSSD OIDC against tenant (app reg + pilot login)
+   docs/deployment/sssd-oidc-staging.md
+
+6. Confirm TPM/LUKS encryption claim green on pilot hosts
+   ltz_tpm_luks role (assert|enroll|data_volume)
+
+7. Stop. That is prod MVP.
 ```
 
 **Prod MVP done when:** pilot Linux shows **Intune Compliant** from attestor ticket, and Conditional Access can require compliant device for pilot apps.
@@ -112,6 +119,8 @@ docs/            # architecture
 | [docs/architecture/MVP-AND-FUTURE-STATE.md](docs/architecture/MVP-AND-FUTURE-STATE.md) | Full phasing |
 | [client/README.md](client/README.md) | Host bootstrap |
 | [lab/README.md](lab/README.md) | Lab deploy |
+| [docs/deployment/sssd-oidc-staging.md](docs/deployment/sssd-oidc-staging.md) | **Next:** SSSD OIDC tenant test |
+| [docs/runbooks/tpm-luks-disk-encryption.md](docs/runbooks/tpm-luks-disk-encryption.md) | TPM + LUKS baseline |
 
 ## Base workstation playbook (unrelated baseline)
 

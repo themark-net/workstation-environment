@@ -1,0 +1,20 @@
+---
+# TPM-backed LUKS baseline (encryption requirement)
+ltz_enable_tpm_luks: true
+# assert | enroll | data_volume
+#   assert       — verify root (or configured device) is LUKS; optional TPM enrollment check
+#   enroll       — systemd-cryptenroll TPM2 onto an existing LUKS volume (needs passphrase once)
+#   data_volume  — create/open a dedicated encrypted volume (lab-friendly; not full root re-encrypt)
+ltz_tpm_luks_mode: "assert"
+ltz_tpm_luks_device: ""              # e.g. /dev/sda3 or /dev/mapper/root — empty = auto-detect root
+ltz_tpm_luks_mapper_name: "ltz-secure"
+ltz_tpm_luks_mount_point: "/var/lib/ltz-secure"
+ltz_tpm_luks_data_size_mb: 512       # data_volume only, sparse file under /var/lib if no free disk
+ltz_tpm_luks_data_image: "/var/lib/ltz-secure.img"
+ltz_tpm_luks_require_tpm: true       # fail when mode=assert/enroll and no TPM (set false for lab VMs without vTPM)
+ltz_tpm_luks_pcr_banks: "sha256"
+# PCR set for binding (UEFI+boot typically 0,2,4,7 — tune per platform)
+ltz_tpm_luks_pcrs: "0+2+4+7"
+ltz_tpm_luks_status_path: "/var/lib/ltz-trust/disk-encryption.json"
+# Passphrase for one-shot enroll / format — prefer --extra-vars or vault, never commit
+ltz_tpm_luks_passphrase: ""

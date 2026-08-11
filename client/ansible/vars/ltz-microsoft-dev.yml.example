@@ -17,6 +17,18 @@ ltz_collector_url: "https://collector.example.com"
 ltz_join_token: "CHANGE-ME"
 ltz_strict_tpm: true
 
+# =============================================================================
+# Disk encryption (TPM + LUKS) — required for baseline compliance posture
+# =============================================================================
+# Greenfield workstations: install with LUKS, then mode=enroll (TPM bind) or assert.
+# Lab VMs without re-install: mode=data_volume + passphrase (via vault/extra-vars).
+ltz_enable_tpm_luks: true
+ltz_tpm_luks_mode: "assert"          # assert | enroll | data_volume
+ltz_tpm_luks_require_tpm: true       # false on lab hosts without vTPM
+# Never commit real passphrases — use ansible-vault or -e
+ltz_tpm_luks_passphrase: ""
+
+
 # Device cert mint: lab cert-mint API shape OR your Cloud PKI front door
 ltz_enable_device_cert: true
 ltz_cert_mint_url: "https://cert-mint.example.com"

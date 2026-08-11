@@ -25,6 +25,7 @@
 |----------|---------|
 | [Linux Zero Trust with Entra](runbooks/linux-zero-trust-entra.md) | Master runbook (MVP) |
 | [Intune compliance bridge](runbooks/intune-compliance-bridge.md) | Discovery/rules + attestor |
+| [TPM + LUKS encryption](runbooks/tpm-luks-disk-encryption.md) | Host encryption baseline |
 | [Device 802.1X EAP-TLS](runbooks/device-8021x-eap-tls.md) | Machine EAP-TLS runbook |
 | [TPM-backed Entra CBA](runbooks/tpm-cba-no-usb.md) | **Future** user passwordless |
 | [AWX GPO parity](runbooks/ansible-awx-gpo-parity.md) | Management depth |

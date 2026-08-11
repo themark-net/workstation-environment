@@ -26,6 +26,8 @@
 | Client on any host | [client/README.md](../../client/README.md) | `bootstrap-host.yml` + `vars/ltz.yml` |
 | Microsoft path | [microsoft-path.md](microsoft-path.md) | Same playbook; filled `ltz_microsoft` |
 | Entra/Azure | [entra-azure-checklist.md](entra-azure-checklist.md) | Portal / Graph work |
+| SSSD OIDC staging (next) | [sssd-oidc-staging.md](sssd-oidc-staging.md) | Tenant app reg + host SSSD |
+| TPM LUKS baseline | [../runbooks/tpm-luks-disk-encryption.md](../runbooks/tpm-luks-disk-encryption.md) | `ltz_tpm_luks` role |
 
 ---
 

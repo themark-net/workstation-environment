@@ -33,7 +33,7 @@ Production-shaped **host** artifacts:
 - Trust / compliance **agent** scripts and unit files  
 - **Attestor client** (calls remote attestor; no lab URLs hard-coded — use vars)  
 - **Intune** discovery script + rules JSON (uploadable artifacts)  
-- **Ansible role(s)** to install agent on a real workstation the same way prod will  
+- **Ansible role(s)** to install agent, device cert, **TPM/LUKS baseline** on a real workstation the same way prod will  
 
 **Must not import:** Proxmox, lab inventory, step-ca lab passwords, docker-compose lab stacks.
 

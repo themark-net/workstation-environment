@@ -86,6 +86,12 @@
       ansible.builtin.include_role:
         name: lab_enroll
   roles:
+    - role: ltz_tpm_luks
+      vars:
+        ltz_enable_tpm_luks: "{{ ltz_enable_tpm_luks | default(true) }}"
+        ltz_tpm_luks_mode: "{{ ltz_tpm_luks_mode | default('data_volume') }}"
+        ltz_tpm_luks_require_tpm: "{{ ltz_tpm_luks_require_tpm | default(false) }}"
+        ltz_tpm_luks_passphrase: "{{ ltz_tpm_luks_passphrase | default('lab-only-luks-change-me') }}"
     - role: ltz_intune_prereqs
       vars:
         ltz_intune_install_desktop: true
@@ -113,6 +119,12 @@
         name: lab_enroll
   roles:
     # Explicitly no desktop / Intune packages on server path.
+    - role: ltz_tpm_luks
+      vars:
+        ltz_enable_tpm_luks: "{{ ltz_enable_tpm_luks | default(true) }}"
+        ltz_tpm_luks_mode: "{{ ltz_tpm_luks_mode | default('data_volume') }}"
+        ltz_tpm_luks_require_tpm: "{{ ltz_tpm_luks_require_tpm | default(false) }}"
+        ltz_tpm_luks_passphrase: "{{ ltz_tpm_luks_passphrase | default('lab-only-luks-change-me') }}"
     - role: ltz_trust_agent
       vars:
         ltz_attestor_url: "http://{{ hostvars[groups['lab_rp'][0]].ansible_host }}:8443"

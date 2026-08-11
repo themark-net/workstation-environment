@@ -1,0 +1,277 @@
+---
+- name: Skip when TPM LUKS disabled
+  ansible.builtin.meta: end_role
+  when: not ltz_enable_tpm_luks | bool
+
+- name: Install LUKS / TPM packages (Debian)
+  ansible.builtin.apt:
+    name:
+      - cryptsetup
+      - cryptsetup-bin
+      - tpm2-tools
+      - jq
+    state: present
+    update_cache: true
+  when: ansible_os_family == 'Debian'
+
+- name: Install LUKS / TPM packages (RedHat)
+  ansible.builtin.package:
+    name:
+      - cryptsetup
+      - tpm2-tools
+      - jq
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Ensure state + lib dirs
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0750"
+    owner: root
+    group: root
+  loop:
+    - /var/lib/ltz-trust
+    - /usr/local/lib/ltz
+
+- name: Install status helper
+  ansible.builtin.copy:
+    src: ltz-tpm-luks-status.sh
+    dest: /usr/local/lib/ltz/ltz-tpm-luks-status.sh
+    mode: "0755"
+
+- name: Detect TPM
+  ansible.builtin.stat:
+    path: /dev/tpmrm0
+  register: ltz_tpmrm0
+
+- name: Detect TPM legacy path
+  ansible.builtin.stat:
+    path: /dev/tpm0
+  register: ltz_tpm0
+
+- name: Set tpm fact
+  ansible.builtin.set_fact:
+    ltz_tpm_present: "{{ ltz_tpmrm0.stat.exists or ltz_tpm0.stat.exists }}"
+
+- name: Fail when TPM required but missing
+  ansible.builtin.fail:
+    msg: "TPM required (ltz_tpm_luks_require_tpm=true) but /dev/tpmrm0 and /dev/tpm0 absent"
+  when:
+    - ltz_tpm_luks_require_tpm | bool
+    - not ltz_tpm_present | bool
+    - ltz_tpm_luks_mode in ['assert', 'enroll']
+
+# ----- data_volume mode (safe for lab / retrofit without re-encrypting root) -----
+- name: Data volume — create sparse image if missing
+  ansible.builtin.command:
+    cmd: "dd if=/dev/zero of={{ ltz_tpm_luks_data_image }} bs=1M count=0 seek={{ ltz_tpm_luks_data_size_mb }}"
+    creates: "{{ ltz_tpm_luks_data_image }}"
+  when: ltz_tpm_luks_mode == 'data_volume'
+
+- name: Data volume — format LUKS if not already
+  ansible.builtin.shell: |
+    set -euo pipefail
+    if cryptsetup isLuks "{{ ltz_tpm_luks_data_image }}"; then
+      exit 0
+    fi
+    if [ -z "{{ ltz_tpm_luks_passphrase }}" ]; then
+      echo "ltz_tpm_luks_passphrase required to format data volume" >&2
+      exit 2
+    fi
+    printf '%s' "{{ ltz_tpm_luks_passphrase }}" | cryptsetup luksFormat --type luks2 --batch-mode "{{ ltz_tpm_luks_data_image }}"
+  args:
+    executable: /bin/bash
+  when: ltz_tpm_luks_mode == 'data_volume'
+  no_log: true
+
+- name: Data volume — open mapper
+  ansible.builtin.shell: |
+    set -euo pipefail
+    if [ -e /dev/mapper/{{ ltz_tpm_luks_mapper_name }} ]; then
+      exit 0
+    fi
+    if [ -z "{{ ltz_tpm_luks_passphrase }}" ]; then
+      # try TPM unlock via systemd-cryptsetup if enrolled
+      if systemctl start "systemd-cryptsetup@{{ ltz_tpm_luks_mapper_name }}.service" 2>/dev/null; then
+        exit 0
+      fi
+      echo "passphrase or TPM enrollment required to open data volume" >&2
+      exit 2
+    fi
+    printf '%s' "{{ ltz_tpm_luks_passphrase }}" | cryptsetup open "{{ ltz_tpm_luks_data_image }}" "{{ ltz_tpm_luks_mapper_name }}"
+  args:
+    executable: /bin/bash
+  when: ltz_tpm_luks_mode == 'data_volume'
+  no_log: true
+
+- name: Data volume — filesystem
+  ansible.builtin.filesystem:
+    fstype: ext4
+    dev: "/dev/mapper/{{ ltz_tpm_luks_mapper_name }}"
+  when: ltz_tpm_luks_mode == 'data_volume'
+
+- name: Data volume — mount point
+  ansible.builtin.file:
+    path: "{{ ltz_tpm_luks_mount_point }}"
+    state: directory
+    mode: "0750"
+  when: ltz_tpm_luks_mode == 'data_volume'
+
+- name: Data volume — mount
+  ansible.builtin.mount:
+    path: "{{ ltz_tpm_luks_mount_point }}"
+    src: "/dev/mapper/{{ ltz_tpm_luks_mapper_name }}"
+    fstype: ext4
+    opts: defaults,nofail
+    state: mounted
+  when: ltz_tpm_luks_mode == 'data_volume'
+
+- name: Data volume — enroll TPM2 if present
+  ansible.builtin.shell: |
+    set -euo pipefail
+    if ! command -v systemd-cryptenroll >/dev/null; then
+      echo "systemd-cryptenroll not available; skip TPM enroll" >&2
+      exit 0
+    fi
+    if [ "{{ ltz_tpm_present | bool | lower }}" != "true" ]; then
+      echo "no TPM; skip enroll" >&2
+      exit 0
+    fi
+    # enroll only if not already listed
+    if systemd-cryptenroll "{{ ltz_tpm_luks_data_image }}" 2>/dev/null | grep -qi tpm; then
+      exit 0
+    fi
+    if [ -z "{{ ltz_tpm_luks_passphrase }}" ]; then
+      echo "passphrase required for first TPM enroll" >&2
+      exit 2
+    fi
+    PASSWORD="{{ ltz_tpm_luks_passphrase }}" systemd-cryptenroll \
+      --tpm2-device=auto \
+      --tpm2-pcrs={{ ltz_tpm_luks_pcrs }} \
+      "{{ ltz_tpm_luks_data_image }}"
+  args:
+    executable: /bin/bash
+  when:
+    - ltz_tpm_luks_mode == 'data_volume'
+    - ltz_tpm_present | bool
+  no_log: true
+  failed_when: false
+
+# ----- enroll mode (existing LUKS root/device) -----
+- name: Enroll TPM2 on existing LUKS device
+  ansible.builtin.shell: |
+    set -euo pipefail
+    DEV="{{ ltz_tpm_luks_device }}"
+    if [ -z "$DEV" ]; then
+      # try root underlying device
+      SRC=$(findmnt -n -o SOURCE /)
+      if [[ "$SRC" == /dev/mapper/* ]]; then
+        NAME="${SRC#/dev/mapper/}"
+        DEV=$(cryptsetup status "$NAME" 2>/dev/null | awk '/device:/{print $2}')
+      else
+        DEV="$SRC"
+      fi
+    fi
+    if [ -z "$DEV" ] || ! cryptsetup isLuks "$DEV"; then
+      echo "No LUKS device found for enroll (set ltz_tpm_luks_device). Root re-encrypt is not automatic." >&2
+      exit 3
+    fi
+    if systemd-cryptenroll "$DEV" 2>/dev/null | grep -qi tpm; then
+      echo "TPM already enrolled on $DEV"
+      exit 0
+    fi
+    if [ -z "{{ ltz_tpm_luks_passphrase }}" ]; then
+      echo "ltz_tpm_luks_passphrase required for enroll" >&2
+      exit 2
+    fi
+    PASSWORD="{{ ltz_tpm_luks_passphrase }}" systemd-cryptenroll \
+      --tpm2-device=auto \
+      --tpm2-pcrs={{ ltz_tpm_luks_pcrs }} \
+      "$DEV"
+  args:
+    executable: /bin/bash
+  when:
+    - ltz_tpm_luks_mode == 'enroll'
+    - ltz_tpm_present | bool
+  no_log: true
+
+# ----- assert mode -----
+- name: Assert root is LUKS-backed (or data volume exists when allowed)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    SRC=$(findmnt -n -o SOURCE / || true)
+    ok=0
+    if [[ "$SRC" == /dev/mapper/* ]]; then
+      NAME="${SRC#/dev/mapper/}"
+      if cryptsetup status "$NAME" &>/dev/null; then
+        ok=1
+      fi
+    elif [ -n "$SRC" ] && cryptsetup isLuks "$SRC" 2>/dev/null; then
+      ok=1
+    fi
+    if [ -e /dev/mapper/{{ ltz_tpm_luks_mapper_name }} ] || findmnt -n {{ ltz_tpm_luks_mount_point }} &>/dev/null; then
+      ok=1
+    fi
+    if [ "$ok" -ne 1 ]; then
+      echo "ASSERT FAIL: no LUKS root and no {{ ltz_tpm_luks_mapper_name }} data volume." >&2
+      echo "Greenfield: install with LUKS+TPM. Retrofit lab: set ltz_tpm_luks_mode=data_volume with passphrase." >&2
+      exit 1
+    fi
+    echo "assert ok src=$SRC"
+  args:
+    executable: /bin/bash
+  when: ltz_tpm_luks_mode == 'assert'
+  register: ltz_luks_assert
+  failed_when: false
+  changed_when: false
+
+- name: Soft-fail note when assert fails on lab without FDE yet
+  ansible.builtin.debug:
+    msg: >-
+      TPM LUKS assert did not pass ({{ ltz_luks_assert.stderr | default(ltz_luks_assert.stdout) | default('unknown') }}).
+      Host is not fully encrypted. For lab VMs without re-install, use ltz_tpm_luks_mode=data_volume.
+  when:
+    - ltz_tpm_luks_mode == 'assert'
+    - ltz_luks_assert.rc is defined
+    - ltz_luks_assert.rc != 0
+
+- name: Write encryption status JSON
+  ansible.builtin.command: /usr/local/lib/ltz/ltz-tpm-luks-status.sh
+  environment:
+    LTZ_DISK_ENC_STATUS: "{{ ltz_tpm_luks_status_path }}"
+  changed_when: true
+
+- name: Timer unit for encryption status refresh
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-tpm-luks-status.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ TPM/LUKS encryption status
+      After=local-fs.target
+      [Service]
+      Type=oneshot
+      Environment=LTZ_DISK_ENC_STATUS={{ ltz_tpm_luks_status_path }}
+      ExecStart=/usr/local/lib/ltz/ltz-tpm-luks-status.sh
+
+- name: Timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-tpm-luks-status.timer
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Refresh LTZ disk encryption status
+      [Timer]
+      OnBootSec=2min
+      OnUnitActiveSec=1h
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+
+- name: Enable status timer
+  ansible.builtin.systemd:
+    name: ltz-tpm-luks-status.timer
+    enabled: true
+    state: started
+    daemon_reload: true

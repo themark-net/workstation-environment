@@ -149,6 +149,16 @@ fi
 
 attested=$ticket_ok
 
+
+# Disk encryption status (from ltz_tpm_luks helper)
+disk_encrypted=false
+DISK_JSON="${LTZ_DISK_ENC_STATUS:-$STATE_DIR/disk-encryption.json}"
+if [[ -f "$DISK_JSON" ]]; then
+  disk_encrypted=$(jq -r '.disk_encrypted // false' "$DISK_JSON" 2>/dev/null || echo false)
+fi
+# normalize boolean for jq
+[[ "$disk_encrypted" == "true" ]] || disk_encrypted=false
+
 jq -nc \
   --argjson schema 2 \
   --argjson ts "$ts" \
@@ -157,8 +167,9 @@ jq -nc \
   --argjson tpm_present "$tpm_present" \
   --argjson attested "$attested" \
   --argjson ticket_expires_at "${ticket_exp:-0}" \
+  --argjson disk_encrypted "$disk_encrypted" \
   --argjson lab false \
-  '{schema:$schema,ts:$ts,hostname:$hostname,device_id:$device_id,tpm_present:$tpm_present,attested:$attested,ticket_expires_at:$ticket_expires_at,lab:$lab,ticket_fresh:$attested}' \
+  '{schema:$schema,ts:$ts,hostname:$hostname,device_id:$device_id,tpm_present:$tpm_present,attested:$attested,ticket_expires_at:$ticket_expires_at,disk_encrypted:$disk_encrypted,lab:$lab,ticket_fresh:$attested}' \
   >"${STATUS_JSON}.tmp"
 mv "${STATUS_JSON}.tmp" "$STATUS_JSON"
 chmod 0644 "$STATUS_JSON"
@@ -170,4 +181,4 @@ if [[ -n "$COLLECTOR_URL" && "$attested" == true && -f "$TICKET_FILE" ]]; then
     --data-binary @"$STATUS_JSON" || true
 fi
 
-echo "ltz-trust-agent: attested=$attested tpm=$tpm_present status=$STATUS_JSON"
+echo "ltz-trust-agent: attested=$attested tpm=$tpm_present disk_encrypted=$disk_encrypted status=$STATUS_JSON"

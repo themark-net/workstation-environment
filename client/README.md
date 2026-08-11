@@ -109,3 +109,8 @@ No host-agent code change if paths match role defaults.
 - [docs/deployment/README.md](../docs/deployment/README.md) — lab → Microsoft transition  
 - [docs/architecture/MVP-AND-FUTURE-STATE.md](../docs/architecture/MVP-AND-FUTURE-STATE.md)  
 - [docs/architecture/REPO-BOUNDARIES.md](../docs/architecture/REPO-BOUNDARIES.md)  
+
+
+### Disk encryption
+
+Role **`ltz_tpm_luks`** is included from `bootstrap-host.yml`. See [docs/runbooks/tpm-luks-disk-encryption.md](../docs/runbooks/tpm-luks-disk-encryption.md).

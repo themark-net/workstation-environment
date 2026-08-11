@@ -27,6 +27,20 @@
           "Description": "Renew device attestation (ltz-trust-agent). Ticket must be unexpired."
         }
       ]
+    },
+    {
+      "SettingName": "disk_encrypted",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://example.invalid/ltz-disk-encryption",
+      "RemediationStrings": [
+        {
+          "Language": "en_US",
+          "Title": "Disk encryption required",
+          "Description": "Host must use LUKS (preferably TPM-bound). Contact Linux platform for baseline remediation."
+        }
+      ]
     }
   ]
 }
