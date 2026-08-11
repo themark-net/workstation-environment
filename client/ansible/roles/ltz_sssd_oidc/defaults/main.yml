@@ -1,0 +1,10 @@
+---
+ltz_enable_sssd_oidc: false
+ltz_sssd_oidc:
+  tenant_id: ""
+  domain: ""
+  client_id: ""
+  issuer: ""
+  scope: "openid profile email offline_access"
+  debug_level: "0"
+ltz_sssd_oidc_status_path: /var/lib/ltz-trust/sssd-oidc-status.json

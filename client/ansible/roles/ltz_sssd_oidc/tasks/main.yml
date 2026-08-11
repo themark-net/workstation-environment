@@ -1,0 +1,64 @@
+---
+- name: Skip when disabled
+  ansible.builtin.meta: end_role
+  when: not (ltz_enable_sssd_oidc | default(false) | bool)
+
+- name: Require tenant + client_id
+  ansible.builtin.assert:
+    that:
+      - ltz_sssd_oidc.tenant_id | length > 0
+      - ltz_sssd_oidc.domain | length > 0
+      - ltz_sssd_oidc.client_id | length > 0
+    fail_msg: "ltz_sssd_oidc requires tenant_id, domain, and client_id when enabled"
+
+- name: Install SSSD OIDC packages (Debian)
+  ansible.builtin.apt:
+    name: [sssd, sssd-idp, jq]
+    state: present
+    update_cache: true
+  when: ansible_os_family == 'Debian'
+  register: ltz_sssd_pkgs_deb
+  failed_when: false
+
+- name: Install SSSD OIDC packages (RedHat)
+  ansible.builtin.package:
+    name: [sssd, sssd-idp, jq]
+    state: present
+  when: ansible_os_family == 'RedHat'
+  register: ltz_sssd_pkgs_rh
+  failed_when: false
+
+- name: Ensure sssd conf dir
+  ansible.builtin.file:
+    path: /etc/sssd
+    state: directory
+    mode: "0700"
+
+- name: Deploy sssd.conf for Entra OIDC
+  ansible.builtin.template:
+    src: sssd.conf.j2
+    dest: /etc/sssd/sssd.conf
+    mode: "0600"
+    owner: root
+    group: root
+  notify: restart sssd
+
+- name: Enable and start sssd
+  ansible.builtin.service:
+    name: sssd
+    enabled: true
+    state: started
+  failed_when: false
+
+- name: Ensure state dir
+  ansible.builtin.file:
+    path: /var/lib/ltz-trust
+    state: directory
+    mode: "0750"
+
+- name: Write sssd-oidc status marker
+  ansible.builtin.copy:
+    dest: "{{ ltz_sssd_oidc_status_path }}"
+    mode: "0644"
+    content: |
+      {"role":"ltz_sssd_oidc","enabled":true,"domain":"{{ ltz_sssd_oidc.domain }}","ts":{{ ansible_date_time.epoch }}}

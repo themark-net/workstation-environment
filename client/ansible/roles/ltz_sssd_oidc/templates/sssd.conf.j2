@@ -1,0 +1,14 @@
+# Managed by LTZ ltz_sssd_oidc — user plane OIDC → Entra
+[sssd]
+services = nss, pam
+config_file_version = 2
+domains = {{ ltz_sssd_oidc.domain }}
+
+[domain/{{ ltz_sssd_oidc.domain }}]
+id_provider = idp
+idp_type = entra_id
+idp_client_id = {{ ltz_sssd_oidc.client_id }}
+idp_issuer_url = {{ ltz_sssd_oidc.issuer | default('https://login.microsoftonline.com/' ~ ltz_sssd_oidc.tenant_id ~ '/v2.0', true) }}
+idp_scope = {{ ltz_sssd_oidc.scope | default('openid profile email offline_access') }}
+debug_level = {{ ltz_sssd_oidc.debug_level | default('0') }}
+fallback_homedir = /home/%u
