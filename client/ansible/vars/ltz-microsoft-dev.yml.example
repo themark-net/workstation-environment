@@ -4,7 +4,7 @@
 # real or developer-tenant hosts with in-place Microsoft components.
 #
 #   cp vars/ltz-microsoft-dev.yml.example vars/ltz.yml
-#   # fill tenant_id, URLs, secrets
+#   # fill tenant_id, URLs, secrets, modular enables
 #   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-host.yml
 # =============================================================================
 
@@ -20,20 +20,15 @@ ltz_strict_tpm: true
 # =============================================================================
 # Disk encryption (TPM + LUKS) — required for baseline compliance posture
 # =============================================================================
-# Greenfield workstations: install with LUKS, then mode=enroll (TPM bind) or assert.
-# Lab VMs without re-install: mode=data_volume + passphrase (via vault/extra-vars).
 ltz_enable_tpm_luks: true
 ltz_tpm_luks_mode: "assert"          # assert | enroll | data_volume
-ltz_tpm_luks_require_tpm: true       # false on lab hosts without vTPM
-# Never commit real passphrases — use ansible-vault or -e
+ltz_tpm_luks_require_tpm: true
 ltz_tpm_luks_passphrase: ""
 
-# Recovery key escrow (BitLocker-style) — Ansible controller fetch
 ltz_tpm_luks_escrow_enable: true
-ltz_tpm_luks_escrow_wrap: none          # none | age | openssl
-ltz_tpm_luks_escrow_pubkey_path: ""     # on target host if wrap!=none
+ltz_tpm_luks_escrow_wrap: none
+ltz_tpm_luks_escrow_pubkey_path: ""
 ltz_tpm_luks_escrow_strict: false
-
 
 # Device cert mint: lab cert-mint API shape OR your Cloud PKI front door
 ltz_enable_device_cert: true
@@ -44,6 +39,45 @@ ltz_radius_ca_file: "/etc/ltz-trust/lab-ca-bundle.pem"  # install enterprise cha
 
 ltz_install_intune_prereqs: true
 ltz_intune_install_desktop: true
+
+# =============================================================================
+# Modular optional roles
+# =============================================================================
+ltz_enable_compliance: true
+ltz_compliance_strict: false
+ltz_compliance_require_attested: true
+ltz_compliance_require_disk_encrypted: true
+
+ltz_enable_sssd_oidc: false
+ltz_sssd_oidc:
+  tenant_id: ""                       # fill when enabling user OIDC login
+  domain: "contoso.onmicrosoft.com"
+  client_id: ""
+  issuer: ""
+  scope: "openid profile email offline_access"
+  debug_level: "0"
+
+ltz_enable_ansible_pull: false
+ltz_ansible_pull:
+  repo_url: "https://github.com/themark-net/workstation-environment.git"
+  repo_branch: "main"
+  playbook: "client/ansible/playbooks/pull-local.yml"
+  workdir: /var/lib/ltz-pull
+  interval: "1h"
+  only_if_changed: true
+  ssh_key_file: ""
+
+ltz_enable_mdatp: false
+ltz_enable_nessus: false
+ltz_enable_log_forward: false
+
+ltz_modular_roles:
+  - { role: ltz_sssd_oidc,    flag: ltz_enable_sssd_oidc }
+  - { role: ltz_mdatp,        flag: ltz_enable_mdatp }
+  - { role: ltz_nessus,       flag: ltz_enable_nessus }
+  - { role: ltz_log_forward,  flag: ltz_enable_log_forward }
+  - { role: ltz_ansible_pull, flag: ltz_enable_ansible_pull }
+  - { role: ltz_compliance,   flag: ltz_enable_compliance }
 
 ltz_microsoft:
   tenant_id: "00000000-0000-0000-0000-000000000000"
@@ -56,7 +90,7 @@ ltz_microsoft:
   cloud_pki_enabled: true
   cloud_pki_mint_url: "https://cert-mint.example.com"
   cloud_pki_issuing_ca_thumbprint: ""
-  maa_enabled: false   # set true + attestor backend=maa when E5/MAA available
+  maa_enabled: false
   maa_endpoint: ""
   cba_enabled: false
   graph_app_id: ""
