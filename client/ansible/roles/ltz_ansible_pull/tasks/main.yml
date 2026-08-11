@@ -1,0 +1,90 @@
+---
+- name: Skip when disabled
+  ansible.builtin.meta: end_role
+  when: not (ltz_enable_ansible_pull | default(false) | bool)
+
+- name: Install ansible-core + git (Debian)
+  ansible.builtin.apt:
+    name: [ansible-core, git, jq]
+    state: present
+    update_cache: true
+  when: ansible_os_family == 'Debian'
+
+- name: Install ansible-core + git (RedHat)
+  ansible.builtin.package:
+    name: [ansible-core, git, jq]
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Ensure dirs
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0750"
+  loop:
+    - "{{ ltz_ansible_pull.workdir }}"
+    - /var/lib/ltz-trust
+    - /etc/ltz-trust
+    - /var/log/ltz
+    - /usr/local/lib/ltz
+
+- name: Install pull wrapper
+  ansible.builtin.copy:
+    src: ltz-ansible-pull.sh
+    dest: /usr/local/lib/ltz/ltz-ansible-pull.sh
+    mode: "0755"
+
+- name: Write pull env
+  ansible.builtin.copy:
+    dest: /etc/ltz-trust/ansible-pull.env
+    mode: "0600"
+    content: |
+      LTZ_PULL_REPO_URL="{{ ltz_ansible_pull.repo_url }}"
+      LTZ_PULL_BRANCH="{{ ltz_ansible_pull.repo_branch }}"
+      LTZ_PULL_WORKDIR="{{ ltz_ansible_pull.workdir }}"
+      LTZ_PULL_PLAYBOOK="{{ ltz_ansible_pull.playbook }}"
+      LTZ_PULL_ONLY_IF_CHANGED="{{ '1' if ltz_ansible_pull.only_if_changed | default(true) | bool else '0' }}"
+      LTZ_PULL_SSH_KEY="{{ ltz_ansible_pull.ssh_key_file | default('') }}"
+
+- name: systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-ansible-pull.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ ansible-pull baseline
+      After=network-online.target
+      Wants=network-online.target
+      [Service]
+      Type=oneshot
+      EnvironmentFile=/etc/ltz-trust/ansible-pull.env
+      ExecStart=/usr/local/lib/ltz/ltz-ansible-pull.sh
+
+- name: systemd timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ltz-ansible-pull.timer
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=LTZ ansible-pull schedule
+      [Timer]
+      OnBootSec=5min
+      OnUnitActiveSec={{ ltz_ansible_pull.interval | default('1h') }}
+      Persistent=true
+      RandomizedDelaySec=5min
+      [Install]
+      WantedBy=timers.target
+
+- name: Enable pull timer
+  ansible.builtin.systemd:
+    name: ltz-ansible-pull.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Status marker
+  ansible.builtin.copy:
+    dest: "{{ ltz_ansible_pull_status_path }}"
+    mode: "0644"
+    content: |
+      {"role":"ltz_ansible_pull","enabled":true,"repo":"{{ ltz_ansible_pull.repo_url }}","branch":"{{ ltz_ansible_pull.repo_branch }}","ts":{{ ansible_date_time.epoch }}}

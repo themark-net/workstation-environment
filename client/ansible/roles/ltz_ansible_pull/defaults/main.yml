@@ -1,0 +1,11 @@
+---
+ltz_enable_ansible_pull: false
+ltz_ansible_pull:
+  repo_url: "https://github.com/themark-net/workstation-environment.git"
+  repo_branch: "main"
+  playbook: "client/ansible/playbooks/pull-local.yml"
+  workdir: /var/lib/ltz-pull
+  interval: "1h"
+  only_if_changed: true
+  ssh_key_file: ""
+ltz_ansible_pull_status_path: /var/lib/ltz-trust/ansible-pull-status.json
