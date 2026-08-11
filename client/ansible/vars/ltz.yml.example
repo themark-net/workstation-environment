@@ -5,7 +5,7 @@
 # Only this file (or inventory group_vars with the same keys) changes.
 #
 #   cp vars/ltz.yml.example vars/ltz.yml
-#   # edit endpoints + ltz_microsoft block
+#   # edit endpoints + ltz_microsoft block + modular enables
 #   ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-host.yml
 #
 # Profiles:
@@ -49,7 +49,6 @@ ltz_tpm_luks_escrow_wrap: none          # none | age | openssl
 ltz_tpm_luks_escrow_pubkey_path: ""     # on target host if wrap!=none
 ltz_tpm_luks_escrow_strict: false
 
-
 # Attestor backend is SERVER-side only (on attestor host, not this file):
 #   LTZ_ATTESTOR_BACKEND=local   # lab HMAC tickets
 #   LTZ_ATTESTOR_BACKEND=maa     # Microsoft Azure Attestation (when licensed)
@@ -75,8 +74,52 @@ ltz_install_intune_prereqs: true
 ltz_intune_install_desktop: true
 
 # Artifacts to upload in Intune admin (NOT installed as policies by Ansible):
-#   client/intune/discovery.sh
-#   client/intune/rules.json
+#   client/intune/discovery.sh          → custom compliance discovery
+#   client/intune/rules.json            → custom compliance rules
+#   client/intune/install-ansible-pull.sh → platform script (root, optional seed)
+
+# =============================================================================
+# Modular optional roles — enable flags + registry
+# bootstrap-host.yml and pull-local.yml both honor this list.
+# New modules: copy roles/_template → roles/ltz_<name>, add flag + registry entry.
+# =============================================================================
+ltz_enable_compliance: true
+ltz_compliance_strict: false          # true → fail play if posture not met
+ltz_compliance_require_attested: true
+ltz_compliance_require_disk_encrypted: true
+
+ltz_enable_sssd_oidc: false           # user-plane Entra login (not device trust)
+ltz_sssd_oidc:
+  tenant_id: ""                       # Entra tenant GUID
+  domain: ""                          # e.g. contoso.onmicrosoft.com
+  client_id: ""                       # app registration client ID
+  issuer: ""                          # leave empty → auto from tenant_id
+  scope: "openid profile email offline_access"
+  debug_level: "0"
+
+ltz_enable_ansible_pull: false        # also seedable via Intune platform script
+ltz_ansible_pull:
+  repo_url: "https://github.com/themark-net/workstation-environment.git"
+  repo_branch: "main"
+  playbook: "client/ansible/playbooks/pull-local.yml"
+  workdir: /var/lib/ltz-pull
+  interval: "1h"
+  only_if_changed: true
+  ssh_key_file: ""
+
+# Placeholders — implement later; safe no-ops until then
+ltz_enable_mdatp: false               # Microsoft Defender for Endpoint
+ltz_enable_nessus: false              # Tenable Nessus agent / scanner
+ltz_enable_log_forward: false         # journald / syslog → SIEM
+
+# Registry used by bootstrap-host + pull-local (order matters: compliance last)
+ltz_modular_roles:
+  - { role: ltz_sssd_oidc,    flag: ltz_enable_sssd_oidc }
+  - { role: ltz_mdatp,        flag: ltz_enable_mdatp }
+  - { role: ltz_nessus,       flag: ltz_enable_nessus }
+  - { role: ltz_log_forward,  flag: ltz_enable_log_forward }
+  - { role: ltz_ansible_pull, flag: ltz_enable_ansible_pull }
+  - { role: ltz_compliance,   flag: ltz_enable_compliance }
 
 # =============================================================================
 # Microsoft tenant metadata — ONE place for Entra / Azure / demo toggles
