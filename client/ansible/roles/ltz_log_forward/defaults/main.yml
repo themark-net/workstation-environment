@@ -1,0 +1,3 @@
+---
+ltz_enable_log_forward: false
+ltz_log_forward_status_path: /var/lib/ltz-trust/log-forward-status.json

@@ -1,0 +1,17 @@
+---
+- name: Skip when disabled
+  ansible.builtin.meta: end_role
+  when: not (ltz_enable_mdatp | default(false) | bool)
+
+- name: Ensure state dir
+  ansible.builtin.file:
+    path: /var/lib/ltz-trust
+    state: directory
+    mode: "0750"
+
+- name: Placeholder status (ltz_mdatp)
+  ansible.builtin.copy:
+    dest: "{{ ltz_mdatp_status_path }}"
+    mode: "0644"
+    content: |
+      {"role":"ltz_mdatp","enabled":true,"implemented":false,"ts":{{ ansible_date_time.epoch }}}

@@ -1,0 +1,8 @@
+---
+ltz_enable_compliance: true
+ltz_compliance_strict: false
+ltz_compliance_status_path: /var/lib/ltz-trust/compliance.json
+ltz_compliance_require_attested: true
+ltz_compliance_require_disk_encrypted: true
+ltz_status_json: /var/lib/ltz-trust/status.json
+ltz_disk_enc_status: /var/lib/ltz-trust/disk-encryption.json

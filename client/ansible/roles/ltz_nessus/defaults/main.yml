@@ -1,0 +1,3 @@
+---
+ltz_enable_nessus: false
+ltz_nessus_status_path: /var/lib/ltz-trust/nessus-status.json

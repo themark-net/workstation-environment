@@ -1,0 +1,58 @@
+---
+- name: Skip when disabled
+  ansible.builtin.meta: end_role
+  when: not (ltz_enable_compliance | default(true) | bool)
+
+- name: Ensure state dir
+  ansible.builtin.file:
+    path: /var/lib/ltz-trust
+    state: directory
+    mode: "0750"
+
+- name: Read status.json if present
+  ansible.builtin.slurp:
+    src: "{{ ltz_status_json }}"
+  register: ltz_status_slurp
+  failed_when: false
+
+- name: Read disk-encryption.json if present
+  ansible.builtin.slurp:
+    src: "{{ ltz_disk_enc_status }}"
+  register: ltz_disk_slurp
+  failed_when: false
+
+- name: Parse compliance facts
+  ansible.builtin.set_fact:
+    ltz_c_attested: "{{ (ltz_status_slurp.content | b64decode | from_json).attested | default(false) if (ltz_status_slurp.content is defined) else false }}"
+    ltz_c_disk: "{{ (ltz_disk_slurp.content | b64decode | from_json).disk_encrypted | default(false) if (ltz_disk_slurp.content is defined) else false }}"
+    ltz_c_status_present: "{{ ltz_status_slurp.content is defined }}"
+    ltz_c_disk_present: "{{ ltz_disk_slurp.content is defined }}"
+
+- name: Build compliance report
+  ansible.builtin.set_fact:
+    ltz_compliance_report:
+      schema: 1
+      ts: "{{ ansible_date_time.epoch | int }}"
+      host: "{{ inventory_hostname }}"
+      checks:
+        status_json_present: "{{ ltz_c_status_present | bool }}"
+        attested: "{{ ltz_c_attested | bool }}"
+        disk_status_present: "{{ ltz_c_disk_present | bool }}"
+        disk_encrypted: "{{ ltz_c_disk | bool }}"
+      required:
+        attested: "{{ ltz_compliance_require_attested | bool }}"
+        disk_encrypted: "{{ ltz_compliance_require_disk_encrypted | bool }}"
+      ok: "{{ (not ltz_compliance_require_attested | bool or ltz_c_attested | bool) and (not ltz_compliance_require_disk_encrypted | bool or ltz_c_disk | bool) }}"
+
+- name: Write compliance.json
+  ansible.builtin.copy:
+    dest: "{{ ltz_compliance_status_path }}"
+    mode: "0644"
+    content: "{{ ltz_compliance_report | to_nice_json }}\n"
+
+- name: Fail when strict and not ok
+  ansible.builtin.assert:
+    that:
+      - ltz_compliance_report.ok | bool
+    fail_msg: "ltz_compliance strict: host does not meet required posture (see {{ ltz_compliance_status_path }})"
+  when: ltz_compliance_strict | bool
