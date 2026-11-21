@@ -1,5 +1,7 @@
 # Workstation Environment
 
+> **Status: parked** (Nov 2026). Not in active development; fixes only if something breaks.
+
 **Linux Zero Trust (LTZ)** on Microsoft Entra / Intune / Conditional Access — device trust first.
 
 | Already done | MVP now | Future (not MVP) |
